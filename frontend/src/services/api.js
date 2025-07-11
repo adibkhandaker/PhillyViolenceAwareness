@@ -13,8 +13,9 @@ export const incidentAPI = {
   // Get all incidents
   getAllIncidents: () => api.get('/incidents'),
   
-  // Get incident statistics
+  // Get incident statistics (both method names for compatibility)
   getStats: () => api.get('/incidents/stats'),
+  getStatistics: () => api.get('/incidents/stats'),
   
   // Get incidents by crime type
   getIncidentsByCrimeType: (ucrGeneral) => api.get(`/incidents/crime-type/${ucrGeneral}`),
