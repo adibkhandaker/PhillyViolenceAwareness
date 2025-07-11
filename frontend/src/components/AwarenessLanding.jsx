@@ -3,29 +3,14 @@ import {
   Box,
   Container,
   Typography,
-  Grid,
-  Card,
-  CardContent,
   Button,
-  Chip,
-  Divider,
   LinearProgress,
   Alert,
   AlertTitle,
-  IconButton,
-  Tooltip,
-  Fade,
-  Slide,
+  Grid,
 } from '@mui/material';
 import {
-  TrendingUp as TrendingUpIcon,
-  Security as SecurityIcon,
-  LocationOn as LocationOnIcon,
-  Assessment as AssessmentIcon,
-  Warning as WarningIcon,
-  Info as InfoIcon,
   ArrowForward as ArrowForwardIcon,
-  Timeline as TimelineIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import CountUp from 'react-countup';
@@ -94,302 +79,504 @@ const AwarenessLanding = ({ onNavigateToDashboard }) => {
 
   const current2025Stats = get2025Stats();
 
-  const statCards = [
-    {
-      title: 'Total Violent Crimes',
-      value: current2025Stats.total,
-      subtitle: 'in 2025 so far',
-      icon: <WarningIcon sx={{ fontSize: 40, color: 'error.main' }} />,
-      color: 'error.main',
-      bgColor: 'rgba(192, 57, 43, 0.05)',
-      description: 'Homicides, Sexual Assaults, Robberies, and Aggravated Assaults',
-    },
-    {
-      title: 'Homicides',
-      value: current2025Stats.homicide,
-      subtitle: 'lives lost',
-      icon: <SecurityIcon sx={{ fontSize: 40, color: 'error.dark' }} />,
-      color: 'error.dark',
-      bgColor: 'rgba(192, 57, 43, 0.08)',
-      description: 'The most serious violent crime category',
-    },
-    {
-      title: 'Robberies',
-      value: current2025Stats.robbery,
-      subtitle: 'property crimes',
-      icon: <LocationOnIcon sx={{ fontSize: 40, color: 'warning.main' }} />,
-      color: 'warning.main',
-      bgColor: 'rgba(214, 137, 16, 0.05)',
-      description: 'Theft involving force or threat of force',
-    },
-    {
-      title: 'Aggravated Assaults',
-      value: current2025Stats.assault,
-      subtitle: 'serious injuries',
-      icon: <TrendingUpIcon sx={{ fontSize: 40, color: 'warning.dark' }} />,
-      color: 'warning.dark',
-      bgColor: 'rgba(214, 137, 16, 0.08)',
-      description: 'Attacks intended to cause serious bodily harm',
-    },
-  ];
-
-  const impactStats = [
-    {
-      label: 'Daily Average',
-      value: current2025Stats.avgPerDay,
-      suffix: ' crimes/day',
-      description: 'Average violent crimes per day in 2025',
-    },
-    {
-      label: 'Weekly Average',
-      value: current2025Stats.avgPerWeek,
-      suffix: ' crimes/week',
-      description: 'Average violent crimes per week in 2025',
-    },
-    {
-      label: 'Historical Data',
-      value: stats?.totalIncidents || 0,
-      suffix: ' total records',
-      description: 'Complete dataset from 2006-2025',
-    },
-  ];
-
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 8 }}>
-        <Box sx={{ textAlign: 'center', py: 8 }}>
-          <LinearProgress sx={{ mb: 4, borderRadius: 2 }} />
-          <Typography variant="h6" color="text.secondary">
-            Loading current crime awareness data...
+      <Box sx={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        bgcolor: 'background.default'
+      }}>
+        <Box sx={{ textAlign: 'center', maxWidth: 400 }}>
+          <LinearProgress sx={{ mb: 4, borderRadius: 2, height: 6 }} />
+          <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 300 }}>
+            Loading Philadelphia crime data...
           </Typography>
         </Box>
-      </Container>
+      </Box>
     );
   }
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      {/* Hero Section */}
-      <Container maxWidth="lg" sx={{ py: 8 }}>
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          <Box sx={{ textAlign: 'center', mb: 8 }}>
+      {/* Hero Section - Apple Style */}
+      <Box sx={{ 
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        py: 8,
+      }}>
+        <Container maxWidth="lg">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+          >
+            {/* Main Headline */}
             <Typography 
               variant="h1" 
               component="h1" 
               sx={{ 
-                mb: 3,
-                background: 'linear-gradient(135deg, #2c3e50 0%, #7f8c8d 100%)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                color: 'transparent',
-                fontWeight: 800,
+                fontSize: { xs: '3rem', sm: '4rem', md: '5rem', lg: '6rem' },
+                fontWeight: 700,
+                lineHeight: 0.9,
+                mb: 2,
+                color: 'text.primary',
+                letterSpacing: '-0.03em',
               }}
             >
-              Philadelphia Violence Awareness
-            </Typography>
-            <Typography 
-              variant="h5" 
-              component="h2" 
-              sx={{ 
-                mb: 4, 
-                color: 'text.secondary',
-                fontWeight: 400,
-                maxWidth: 800,
-                mx: 'auto',
-                lineHeight: 1.5,
-              }}
-            >
-              Understanding the current state of violent crime in Philadelphia through data-driven insights and community awareness
+              Philadelphia
             </Typography>
             
+            <Typography 
+              variant="h1" 
+              component="h1" 
+              sx={{ 
+                fontSize: { xs: '3rem', sm: '4rem', md: '5rem', lg: '6rem' },
+                fontWeight: 700,
+                lineHeight: 0.9,
+                mb: 6,
+                color: 'text.primary',
+                letterSpacing: '-0.03em',
+              }}
+            >
+              Violence Awareness
+            </Typography>
+
+            {/* Error Alert */}
             {error && (
-              <Alert severity="warning" sx={{ mb: 4, maxWidth: 600, mx: 'auto' }}>
+              <Alert severity="warning" sx={{ mb: 6, maxWidth: 600, mx: 'auto' }}>
                 <AlertTitle>Data Notice</AlertTitle>
-                {error}. Displaying sample data for demonstration.
+                {error}. Displaying historical data for awareness.
               </Alert>
             )}
-          </Box>
-        </motion.div>
+          </motion.div>
+        </Container>
+      </Box>
 
-        {/* 2025 Statistics Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-        >
-          <Box sx={{ mb: 6 }}>
-            <Typography variant="h3" component="h2" sx={{ mb: 1, textAlign: 'center', color: 'primary.main' }}>
-              2025 Current Status
-            </Typography>
-            <Typography variant="body1" sx={{ textAlign: 'center', color: 'text.secondary', mb: 4 }}>
-              Real-time data showing violent crime incidents in Philadelphia this year
-            </Typography>
-            
-            <Grid container spacing={3}>
-              {statCards.map((card, index) => (
-                <Grid item xs={12} sm={6} md={3} key={index}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.1 * index }}
-                  >
-                    <Card 
-                      sx={{ 
-                        height: '100%',
-                        bgcolor: card.bgColor,
-                        border: `1px solid ${card.color}20`,
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          transform: 'translateY(-4px)',
-                          boxShadow: `0 8px 24px ${card.color}15`,
-                        }
-                      }}
-                    >
-                      <CardContent sx={{ p: 3, textAlign: 'center' }}>
-                        <Box sx={{ mb: 2 }}>
-                          {card.icon}
-                        </Box>
-                        <Typography variant="h3" component="div" sx={{ 
-                          color: card.color, 
-                          fontWeight: 700,
-                          mb: 1,
-                        }}>
-                          <CountUp 
-                            end={card.value} 
-                            duration={2.5}
-                            delay={0.5 + index * 0.2}
-                            enableScrollSpy
-                            scrollSpyOnce
-                          />
-                        </Typography>
-                        <Typography variant="h6" sx={{ color: 'text.primary', mb: 1, fontWeight: 600 }}>
-                          {card.title}
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-                          {card.subtitle}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
-                          {card.description}
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
-        </motion.div>
-
-        {/* Impact Statistics */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-        >
-          <Card sx={{ mb: 6, bgcolor: 'rgba(44, 62, 80, 0.02)', border: '1px solid rgba(44, 62, 80, 0.08)' }}>
-            <CardContent sx={{ p: 4 }}>
-              <Typography variant="h4" component="h3" sx={{ mb: 3, textAlign: 'center', color: 'primary.main' }}>
-                Impact Analysis
+      {/* Large Statistics Section - Apple Style */}
+      <Box sx={{ py: 12, bgcolor: 'background.paper' }}>
+        <Container maxWidth="xl">
+          {/* 2025 Total Crimes - Hero Number */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <Box sx={{ textAlign: 'center', mb: 16 }}>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  color: 'text.secondary',
+                  fontWeight: 400,
+                  mb: 4,
+                  fontSize: { xs: '1.2rem', md: '1.5rem' },
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Violent Crimes in Philadelphia 2025
               </Typography>
-              <Grid container spacing={4}>
-                {impactStats.map((stat, index) => (
-                  <Grid item xs={12} md={4} key={index}>
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="h3" component="div" sx={{ 
-                        color: 'primary.main', 
-                        fontWeight: 700,
-                        mb: 1,
-                      }}>
-                        <CountUp 
-                          end={stat.value} 
-                          duration={3}
-                          delay={1 + index * 0.3}
-                          decimals={stat.suffix.includes('day') || stat.suffix.includes('week') ? 1 : 0}
-                          suffix={stat.suffix}
-                          enableScrollSpy
-                          scrollSpyOnce
-                        />
-                      </Typography>
-                      <Typography variant="h6" sx={{ color: 'text.primary', mb: 1, fontWeight: 600 }}>
-                        {stat.label}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                        {stat.description}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                ))}
-              </Grid>
-            </CardContent>
-          </Card>
-        </motion.div>
+              
+              <Typography 
+                variant="h1" 
+                component="div"
+                sx={{ 
+                  fontSize: { xs: '8rem', sm: '12rem', md: '16rem', lg: '20rem' },
+                  fontWeight: 800,
+                  lineHeight: 0.8,
+                  color: 'error.main',
+                  mb: 4,
+                  letterSpacing: '-0.04em',
+                }}
+              >
+                <CountUp 
+                  end={current2025Stats.total} 
+                  duration={3}
+                  delay={0.5}
+                  enableScrollSpy
+                  scrollSpyOnce
+                />
+              </Typography>
+              
+              <Typography 
+                variant="h5" 
+                sx={{ 
+                  color: 'text.secondary',
+                  fontWeight: 300,
+                  maxWidth: 600,
+                  mx: 'auto',
+                  lineHeight: 1.4,
+                }}
+              >
+                incidents reported so far this year
+              </Typography>
+            </Box>
+          </motion.div>
 
-        {/* Call to Action */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-        >
-          <Box sx={{ textAlign: 'center', py: 6 }}>
-            <Typography variant="h4" component="h3" sx={{ mb: 3, color: 'primary.main' }}>
-              Explore Detailed Analytics
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 4, color: 'text.secondary', maxWidth: 600, mx: 'auto' }}>
-              Dive deeper into Philadelphia's crime data with our comprehensive dashboard featuring historical trends, 
-              year-by-year analysis, and detailed breakdowns by crime type and location.
-            </Typography>
-            <Button
-              variant="contained"
-              size="large"
-              endIcon={<ArrowForwardIcon />}
-              onClick={onNavigateToDashboard}
-              sx={{
-                py: 2,
-                px: 4,
-                fontSize: '1.1rem',
-                bgcolor: 'primary.main',
-                '&:hover': {
-                  bgcolor: 'primary.dark',
-                  transform: 'translateY(-2px)',
-                },
-                transition: 'all 0.3s ease',
+          {/* Breakdown Statistics */}
+          <Grid container spacing={8}>
+            {/* Homicides */}
+            <Grid item xs={12} md={6}>
+              <motion.div
+                initial={{ opacity: 0, x: -50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                viewport={{ once: true }}
+              >
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography 
+                    variant="h1" 
+                    component="div"
+                    sx={{ 
+                      fontSize: { xs: '4rem', sm: '6rem', md: '8rem', lg: '10rem' },
+                      fontWeight: 800,
+                      lineHeight: 0.8,
+                      color: 'error.dark',
+                      mb: 2,
+                      letterSpacing: '-0.03em',
+                    }}
+                  >
+                    <CountUp 
+                      end={current2025Stats.homicide} 
+                      duration={2.5}
+                      delay={1}
+                      enableScrollSpy
+                      scrollSpyOnce
+                    />
+                  </Typography>
+                  <Typography 
+                    variant="h4" 
+                    sx={{ 
+                      color: 'text.primary',
+                      fontWeight: 600,
+                      mb: 1,
+                    }}
+                  >
+                    Homicides
+                  </Typography>
+                  <Typography 
+                    variant="body1" 
+                    sx={{ 
+                      color: 'text.secondary',
+                      fontWeight: 300,
+                      fontSize: '1.1rem',
+                    }}
+                  >
+                    Lives lost to violence
+                  </Typography>
+                </Box>
+              </motion.div>
+            </Grid>
+
+            {/* Robberies */}
+            <Grid item xs={12} md={6}>
+              <motion.div
+                initial={{ opacity: 0, x: 50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                viewport={{ once: true }}
+              >
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography 
+                    variant="h1" 
+                    component="div"
+                    sx={{ 
+                      fontSize: { xs: '4rem', sm: '6rem', md: '8rem', lg: '10rem' },
+                      fontWeight: 800,
+                      lineHeight: 0.8,
+                      color: 'warning.main',
+                      mb: 2,
+                      letterSpacing: '-0.03em',
+                    }}
+                  >
+                    <CountUp 
+                      end={current2025Stats.robbery} 
+                      duration={2.5}
+                      delay={1.2}
+                      enableScrollSpy
+                      scrollSpyOnce
+                    />
+                  </Typography>
+                  <Typography 
+                    variant="h4" 
+                    sx={{ 
+                      color: 'text.primary',
+                      fontWeight: 600,
+                      mb: 1,
+                    }}
+                  >
+                    Robberies
+                  </Typography>
+                  <Typography 
+                    variant="body1" 
+                    sx={{ 
+                      color: 'text.secondary',
+                      fontWeight: 300,
+                      fontSize: '1.1rem',
+                    }}
+                  >
+                    Theft with force or threat
+                  </Typography>
+                </Box>
+              </motion.div>
+            </Grid>
+          </Grid>
+        </Container>
+      </Box>
+
+      {/* Daily Impact Section */}
+      <Box sx={{ py: 12, bgcolor: 'background.default' }}>
+        <Container maxWidth="lg">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <Box sx={{ textAlign: 'center', mb: 8 }}>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  color: 'text.secondary',
+                  fontWeight: 400,
+                  mb: 4,
+                  fontSize: { xs: '1.2rem', md: '1.5rem' },
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Daily Impact
+              </Typography>
+              
+              <Typography 
+                variant="h1" 
+                component="div"
+                sx={{ 
+                  fontSize: { xs: '6rem', sm: '8rem', md: '12rem', lg: '16rem' },
+                  fontWeight: 800,
+                  lineHeight: 0.8,
+                  color: 'primary.main',
+                  mb: 4,
+                  letterSpacing: '-0.04em',
+                }}
+              >
+                <CountUp 
+                  end={current2025Stats.avgPerDay} 
+                  duration={3}
+                  delay={0.5}
+                  decimals={1}
+                  enableScrollSpy
+                  scrollSpyOnce
+                />
+              </Typography>
+              
+              <Typography 
+                variant="h4" 
+                sx={{ 
+                  color: 'text.primary',
+                  fontWeight: 600,
+                  mb: 2,
+                }}
+              >
+                violent crimes per day
+              </Typography>
+              
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  color: 'text.secondary',
+                  fontWeight: 300,
+                  fontSize: '1.2rem',
+                  maxWidth: 600,
+                  mx: 'auto',
+                }}
+              >
+                Average daily rate in Philadelphia for 2025
+              </Typography>
+            </Box>
+          </motion.div>
+        </Container>
+      </Box>
+
+      {/* Historical Context */}
+      <Box sx={{ py: 12, bgcolor: 'background.paper' }}>
+        <Container maxWidth="lg">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <Box sx={{ textAlign: 'center', mb: 8 }}>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  color: 'text.secondary',
+                  fontWeight: 400,
+                  mb: 4,
+                  fontSize: { xs: '1.2rem', md: '1.5rem' },
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Historical Data 2006-2025
+              </Typography>
+              
+              <Typography 
+                variant="h1" 
+                component="div"
+                sx={{ 
+                  fontSize: { xs: '6rem', sm: '8rem', md: '12rem', lg: '16rem' },
+                  fontWeight: 800,
+                  lineHeight: 0.8,
+                  color: 'text.primary',
+                  mb: 4,
+                  letterSpacing: '-0.04em',
+                }}
+              >
+                <CountUp 
+                  end={stats?.totalViolentCrimes || 0} 
+                  duration={3}
+                  delay={0.5}
+                  separator=","
+                  enableScrollSpy
+                  scrollSpyOnce
+                />
+              </Typography>
+              
+              <Typography 
+                variant="h4" 
+                sx={{ 
+                  color: 'text.primary',
+                  fontWeight: 600,
+                  mb: 2,
+                }}
+              >
+                total violent crimes
+              </Typography>
+              
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  color: 'text.secondary',
+                  fontWeight: 300,
+                  fontSize: '1.2rem',
+                  maxWidth: 600,
+                  mx: 'auto',
+                }}
+              >
+                Complete dataset spanning nearly two decades
+              </Typography>
+            </Box>
+          </motion.div>
+        </Container>
+      </Box>
+
+      {/* Call to Action */}
+      <Box sx={{ py: 12, bgcolor: 'background.default' }}>
+        <Container maxWidth="md">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography 
+                variant="h3" 
+                component="h2" 
+                sx={{ 
+                  mb: 4,
+                  fontWeight: 600,
+                  color: 'text.primary',
+                  fontSize: { xs: '2rem', md: '3rem' },
+                }}
+              >
+                Explore the Data
+              </Typography>
+              
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  mb: 6,
+                  color: 'text.secondary',
+                  fontWeight: 300,
+                  lineHeight: 1.6,
+                  fontSize: '1.3rem',
+                }}
+              >
+                Dive deeper into Philadelphia's crime statistics with comprehensive analytics, 
+                historical trends, and detailed breakdowns.
+              </Typography>
+              
+              <Button
+                variant="contained"
+                size="large"
+                endIcon={<ArrowForwardIcon />}
+                onClick={onNavigateToDashboard}
+                sx={{
+                  py: 3,
+                  px: 6,
+                  fontSize: '1.3rem',
+                  fontWeight: 600,
+                  borderRadius: 6,
+                  bgcolor: 'primary.main',
+                  '&:hover': {
+                    bgcolor: 'primary.dark',
+                    transform: 'translateY(-2px)',
+                  },
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 8px 32px rgba(44, 62, 80, 0.3)',
+                }}
+              >
+                View Dashboard
+              </Button>
+            </Box>
+          </motion.div>
+        </Container>
+      </Box>
+
+      {/* Awareness Footer */}
+      <Box sx={{ py: 8, bgcolor: 'background.paper' }}>
+        <Container maxWidth="md">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <Alert 
+              severity="info" 
+              sx={{ 
+                bgcolor: 'transparent',
+                border: 'none',
+                '& .MuiAlert-message': {
+                  width: '100%',
+                  textAlign: 'center',
+                }
               }}
             >
-              View Dashboard
-            </Button>
-          </Box>
-        </motion.div>
-
-        {/* Awareness Message */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.8 }}
-        >
-          <Alert 
-            severity="info" 
-            sx={{ 
-              mt: 6,
-              bgcolor: 'rgba(93, 173, 226, 0.08)',
-              border: '1px solid rgba(93, 173, 226, 0.2)',
-              borderRadius: 3,
-            }}
-          >
-            <AlertTitle sx={{ color: 'info.main', fontWeight: 600 }}>
-              Community Awareness Initiative
-            </AlertTitle>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              This platform provides transparent access to Philadelphia's violent crime data to promote community awareness, 
-              support evidence-based policy decisions, and encourage collaborative efforts toward creating safer neighborhoods. 
-              Data is sourced from the Philadelphia Police Department and updated regularly.
-            </Typography>
-          </Alert>
-        </motion.div>
-      </Container>
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  color: 'text.secondary',
+                  fontWeight: 300,
+                  fontSize: '1.1rem',
+                  lineHeight: 1.6,
+                }}
+              >
+                This platform provides transparent access to Philadelphia's violent crime data to promote 
+                community awareness and support evidence-based solutions for creating safer neighborhoods.
+              </Typography>
+            </Alert>
+          </motion.div>
+        </Container>
+      </Box>
     </Box>
   );
 };
