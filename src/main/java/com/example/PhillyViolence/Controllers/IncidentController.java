@@ -1,6 +1,7 @@
 package com.example.PhillyViolence.Controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,6 +35,12 @@ public class IncidentController {
         return ResponseEntity.ok(incidents);
     }
 
+    @GetMapping("/address/{address}")
+    public ResponseEntity<List<Incident>> getIncidentsbyAddress(@PathVariable String address) {
+        List<Incident> incidents = incidentService.getIncidentsbyAddress(address);
+        return new ResponseEntity<>(incidents, HttpStatus.OK);
+    }
+
     @GetMapping("/by-year/{year}")
     public ResponseEntity<List<Incident>> getIncidentsByYear(@PathVariable int year) {
         List<Incident> incidents = incidentService.getIncidentsByYear(year);
@@ -49,6 +56,16 @@ public class IncidentController {
     @PostMapping("/refresh")
     public ResponseEntity<String> refreshIncidentData() {
         String result = incidentService.refreshIncidentData();
+        if (result.startsWith("Error")) {
+            return ResponseEntity.internalServerError().body(result);
+        } else {
+            return ResponseEntity.ok(result);
+        }
+    }
+
+    @PostMapping("/refresh/force")
+    public ResponseEntity<String> forceRefreshAllData() {
+        String result = incidentService.refreshIncidentData(true);
         if (result.startsWith("Error")) {
             return ResponseEntity.internalServerError().body(result);
         } else {

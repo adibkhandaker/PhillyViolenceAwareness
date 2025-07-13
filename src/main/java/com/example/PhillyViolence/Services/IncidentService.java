@@ -8,7 +8,8 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -22,32 +23,110 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class IncidentService {
+public class IncidentService implements ApplicationRunner {
 
     @Autowired
     private IncidentRepository incidentRepository;
 
     // Philadelphia crime data API URLs for multiple years
-    private String buildAPIUrl(int year) {
+    private String buildAPIUrl(int year, boolean isHistorical) {
+        // No limit - get all records for the year
         return String.format(
-            "https://phl.carto.com/api/v2/sql?filename=incidents_part1_part2&format=csv&skipfields=cartodb_id,the_geom,the_geom_webmercator&q=SELECT%%20*%%20,%%20ST_Y(the_geom)%%20AS%%20lat,%%20ST_X(the_geom)%%20AS%%20lng%%20FROM%%20incidents_part1_part2%%20WHERE%%20dispatch_date_time%%20%%3E=%%20%%27%d-01-01%%27%%20AND%%20dispatch_date_time%%20%%3C%%20%%27%d-01-01%%27%%20AND%%20ucr_general%%20IN%%20(%%27100%%27,%%27200%%27,%%27300%%27,%%27400%%27)%%20ORDER%%20BY%%20dispatch_date_time%%20DESC%%20LIMIT%%201000",
+            "https://phl.carto.com/api/v2/sql?filename=incidents_part1_part2&format=csv&skipfields=cartodb_id,the_geom,the_geom_webmercator&q=SELECT%%20*%%20,%%20ST_Y(the_geom)%%20AS%%20lat,%%20ST_X(the_geom)%%20AS%%20lng%%20FROM%%20incidents_part1_part2%%20WHERE%%20dispatch_date_time%%20>=%%20'%d-01-01'%%20AND%%20dispatch_date_time%%20<%%20'%d-01-01'%%20AND%%20ucr_general%%20IN%%20('100','200','300','400')%%20ORDER%%20BY%%20dispatch_date_time%%20DESC",
             year, year + 1
         );
     }
     
-    private final int[] YEARS_TO_FETCH = {2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025};
+    private final int[] HISTORICAL_YEARS = {2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024};
+    private final int CURRENT_YEAR = 2025;
 
-    @Scheduled(fixedDelay = 3600000) // Run every hour - updates 2025 data
-    public void getIncidentData() {
-        updateCurrentYearData();
+    @Override
+    public void run(ApplicationArguments args) throws Exception {
+        // Check if database is empty or needs initialization
+        long totalRecords = incidentRepository.count();
+        System.out.println("=== DATABASE INITIALIZATION CHECK ===");
+        System.out.println("Current database contains " + totalRecords + " records");
+        
+        // Only initialize if database is truly empty (less than 50000 records to account for any test data)
+        if (totalRecords < 50000) {
+            System.out.println("Database appears empty (< 50000 records). Initializing with all historical data...");
+            initializeAllHistoricalData();
+        } else {
+            System.out.println("Database already contains sufficient data (" + totalRecords + " records). Skipping full initialization.");
+            System.out.println("Only updating current year (" + CURRENT_YEAR + ") data if needed...");
+            // Only update current year if we have very few 2025 records
+            long currentYearCount = incidentRepository.count(); // This is a simple check, could be improved
+            if (currentYearCount < 250000) { // Only update if we have reasonable amount of historical data
+                updateCurrentYearData();
+            }
+        }
+        System.out.println("=== INITIALIZATION COMPLETE ===");
     }
+
+    // Initialize database with ALL historical data (2006-2024) - runs only once
+    private void initializeAllHistoricalData() {
+        System.out.println("=== INITIALIZING ALL HISTORICAL DATA (2006-2024) ===");
+        
+        int totalProcessed = 0;
+        StringBuilder resultMessage = new StringBuilder();
+        
+        // Load all historical years (2006-2024)
+        for (int year : HISTORICAL_YEARS) {
+            try {
+                String apiUrl = buildAPIUrl(year, true); // true = historical data (higher limit)
+                System.out.println("Loading historical data for year " + year + "...");
+                
+                URL url = new URL(apiUrl);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+                connection.setRequestProperty("User-Agent", "PhillyViolence-App/1.0");
+                connection.setConnectTimeout(15000);
+                connection.setReadTimeout(60000); // Longer timeout for historical data
+                
+                int responseCode = connection.getResponseCode();
+                if (responseCode == 200) {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                    int yearCount = parseCSVAndSaveIncidents(reader, year);
+                    totalProcessed += yearCount;
+                    resultMessage.append(String.format("Year %d: %d incidents loaded. ", year, yearCount));
+                    System.out.println("✅ Successfully loaded " + yearCount + " incidents for year " + year);
+                } else {
+                    System.out.println("❌ API failed for year " + year + " with code " + responseCode);
+                    resultMessage.append(String.format("Year %d: API failed. ", year));
+                }
+            } catch (Exception e) {
+                System.err.println("❌ Failed to fetch data for year " + year + ": " + e.getMessage());
+                resultMessage.append(String.format("Year %d: Error occurred. ", year));
+            }
+        }
+        
+        // Now load current year (2025) data
+        updateCurrentYearData();
+        
+        if (totalProcessed == 0) {
+            System.out.println("❌ All APIs failed. Creating sample data...");
+            createEnhancedSampleData();
+        } else {
+            System.out.println("✅ Historical data initialization completed. Total incidents: " + totalProcessed);
+        }
+    }
+
+    // @Scheduled(fixedDelay = 3600000) // Run every hour - updates 2025 data only - DISABLED DURING DEVELOPMENT
+    // public void getIncidentData() {
+    //     updateCurrentYearData();
+    // }
     
     // Method to update only current year (2025) data every hour
     private void updateCurrentYearData() {
-        int currentYear = 2025;
         try {
-            String apiUrl = buildAPIUrl(currentYear);
-            System.out.println("Hourly update: Fetching latest " + currentYear + " data...");
+            System.out.println("=== UPDATING CURRENT YEAR (" + CURRENT_YEAR + ") DATA ===");
+            
+            // First, delete existing 2025 data to avoid duplicates
+            int deletedCount = incidentRepository.deleteByDispatchDateTimeYear(CURRENT_YEAR);
+            System.out.println("Deleted " + deletedCount + " existing " + CURRENT_YEAR + " records");
+            
+            String apiUrl = buildAPIUrl(CURRENT_YEAR, false); // false = current year (normal limit)
+            System.out.println("Fetching latest " + CURRENT_YEAR + " data...");
             
             URL url = new URL(apiUrl);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -59,70 +138,44 @@ public class IncidentService {
             int responseCode = connection.getResponseCode();
             if (responseCode == 200) {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                int count = parseCSVAndSaveIncidents(reader, currentYear);
-                System.out.println("Hourly update completed: " + count + " incidents processed for " + currentYear);
+                int count = parseCSVAndSaveIncidents(reader, CURRENT_YEAR);
+                System.out.println("✅ Current year update completed: " + count + " incidents processed for " + CURRENT_YEAR);
             } else {
-                System.out.println("Hourly update failed: API returned code " + responseCode);
+                System.out.println("❌ Current year update failed: API returned code " + responseCode);
             }
         } catch (Exception e) {
-            System.err.println("Hourly update error: " + e.getMessage());
+            System.err.println("❌ Current year update error: " + e.getMessage());
         }
     }
 
+    // Manual refresh endpoint - only updates current year unless forced
     public String refreshIncidentData() {
-        System.out.println("Starting scheduled data refresh for all years...");
-        
-        int totalProcessed = 0;
-        StringBuilder resultMessage = new StringBuilder();
-        
-        // Fetch data for each year
-        for (int year : YEARS_TO_FETCH) {
-            try {
-                String apiUrl = buildAPIUrl(year);
-                System.out.println("Fetching data for year " + year + "...");
-                
-                URL url = new URL(apiUrl);
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("GET");
-                connection.setRequestProperty("User-Agent", "PhillyViolence-App/1.0");
-                connection.setConnectTimeout(10000);
-                connection.setReadTimeout(30000);
-                
-                int responseCode = connection.getResponseCode();
-                if (responseCode == 200) {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                    int yearCount = parseCSVAndSaveIncidents(reader, year);
-                    totalProcessed += yearCount;
-                    resultMessage.append(String.format("Year %d: %d incidents loaded. ", year, yearCount));
-                    System.out.println("Successfully loaded " + yearCount + " incidents for year " + year);
-                } else {
-                    System.out.println("API failed for year " + year + " with code " + responseCode);
-                    resultMessage.append(String.format("Year %d: API failed. ", year));
-                }
-            } catch (Exception e) {
-                System.err.println("Failed to fetch data for year " + year + ": " + e.getMessage());
-                resultMessage.append(String.format("Year %d: Error occurred. ", year));
-            }
+        return refreshIncidentData(false);
+    }
+    
+    // Manual refresh with option to reload all data
+    public String refreshIncidentData(boolean forceReloadAll) {
+        if (forceReloadAll) {
+            System.out.println("=== FORCED RELOAD OF ALL DATA ===");
+            // Clear database completely
+            incidentRepository.deleteAll();
+            initializeAllHistoricalData();
+            return "Forced reload completed. All data refreshed.";
+        } else {
+            System.out.println("=== MANUAL REFRESH (CURRENT YEAR ONLY) ===");
+            updateCurrentYearData();
+            long totalRecords = incidentRepository.count();
+            return String.format("Manual refresh completed. Current year updated. Total records in database: %d", totalRecords);
         }
-        
-        if (totalProcessed == 0) {
-            // If all APIs fail, create enhanced sample data
-            createEnhancedSampleData();
-            return "All Philadelphia crime APIs are currently unavailable. Using enhanced sample data.";
-        }
-        
-        String finalMessage = String.format("Data refresh completed. Total incidents processed: %d. %s", 
-                                          totalProcessed, resultMessage.toString());
-        System.out.println(finalMessage);
-        return finalMessage;
     }
 
     private int parseCSVAndSaveIncidents(BufferedReader reader, int year) throws Exception {
         String line;
         boolean isFirstLine = true;
         int processedCount = 0;
+        int maxRecords = (year == CURRENT_YEAR) ? 1000 : 5000; // Higher limit for historical data
         
-        while ((line = reader.readLine()) != null && processedCount < 1000) {
+        while ((line = reader.readLine()) != null && processedCount < maxRecords) {
             if (isFirstLine) {
                 isFirstLine = false;
                 continue; // Skip header
@@ -324,5 +377,9 @@ public class IncidentService {
                 .filter(incident -> incident.getDispatchDateTime() != null)
                 .sorted((a, b) -> a.getDispatchDateTime().compareTo(b.getDispatchDateTime()))
                 .collect(Collectors.toList());
+    }
+
+    public List<Incident> getIncidentsbyAddress(String address) {
+        return incidentRepository.getIncidentsbyAddress(address);
     }
 }

@@ -20,6 +20,9 @@ export const incidentAPI = {
   // Get incidents by crime type
   getIncidentsByCrimeType: (ucrGeneral) => api.get(`/incidents/crime-type/${ucrGeneral}`),
   
+  // Get incidents by address
+  getIncidentsByAddress: (address) => api.get(`/incidents/address/${encodeURIComponent(address)}`),
+  
   // Get incidents by year
   getIncidentsByYear: (year) => api.get(`/incidents/by-year/${year}`),
   

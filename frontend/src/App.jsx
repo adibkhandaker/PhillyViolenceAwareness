@@ -16,89 +16,152 @@ import { motion } from 'framer-motion';
 import AwarenessLanding from './components/AwarenessLanding';
 import Dashboard from './components/Dashboard';
 
-// Modern, subtle color theme
+// Import fonts
+import '@fontsource/playfair-display/400.css';
+import '@fontsource/playfair-display/700.css';
+import '@fontsource/playfair-display/900.css';
+import '@fontsource/oswald/300.css';
+import '@fontsource/oswald/400.css';
+import '@fontsource/oswald/700.css';
+import '@fontsource/roboto-condensed/300.css';
+import '@fontsource/roboto-condensed/400.css';
+import '@fontsource/roboto-condensed/700.css';
+import '@fontsource/crimson-text/400.css';
+import '@fontsource/crimson-text/600.css';
+
+// Diverse typography theme
 const theme = createTheme({
   palette: {
-    mode: 'light',
+    mode: 'dark',
     primary: {
-      main: '#2c3e50',      // Deep slate blue
-      light: '#34495e',     // Lighter slate
-      dark: '#1a252f',      // Darker slate
+      main: '#ffffff',      // Pure white
+      light: '#f5f5f5',     // Light gray
+      dark: '#e0e0e0',      // Medium gray
     },
     secondary: {
-      main: '#7f8c8d',      // Muted gray
-      light: '#95a5a6',     // Light gray
-      dark: '#6c7b7d',      // Darker gray
+      main: '#9e9e9e',      // Medium gray
+      light: '#bdbdbd',     // Light gray
+      dark: '#757575',      // Dark gray
     },
     background: {
-      default: '#f8f9fa',   // Very light gray
-      paper: '#ffffff',     // Pure white
+      default: '#000000',   // Pure black
+      paper: '#0a0a0a',     // Very dark gray
     },
     text: {
-      primary: '#2c3e50',   // Dark slate for main text
-      secondary: '#7f8c8d', // Muted gray for secondary text
+      primary: '#ffffff',   // White text
+      secondary: '#b0b0b0', // Light gray for secondary text
     },
     error: {
-      main: '#c0392b',      // Muted red
-      light: '#e74c3c',     // Slightly brighter red
+      main: '#ff4444',      // Subtle red
+      light: '#ff6666',     // Light red
+      dark: '#cc0000',      // Dark red
     },
     warning: {
-      main: '#d68910',      // Muted orange
-      light: '#f39c12',     // Slightly brighter orange
+      main: '#ffaa00',      // Subtle orange
+      light: '#ffcc44',     // Light orange
+      dark: '#cc8800',      // Dark orange
     },
     info: {
-      main: '#5dade2',      // Soft blue
-      light: '#85c1e9',     // Light blue
+      main: '#ffffff',      // White for info
+      light: '#f5f5f5',     // Light gray
+      dark: '#e0e0e0',      // Medium gray
     },
     success: {
-      main: '#27ae60',      // Muted green
-      light: '#2ecc71',     // Slightly brighter green
+      main: '#4caf50',      // Subtle green
+      light: '#66bb6a',     // Light green
+      dark: '#388e3c',      // Dark green
     },
   },
   typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    // Main headlines - Bold, impactful display font
     h1: {
+      fontFamily: '"Oswald", "Arial Black", "Helvetica", sans-serif',
       fontWeight: 700,
       fontSize: '3.5rem',
-      lineHeight: 1.2,
-      letterSpacing: '-0.02em',
+      lineHeight: 1.0,
+      letterSpacing: '0.02em',
+      textTransform: 'uppercase',
     },
+    // Secondary headlines - Elegant serif
     h2: {
-      fontWeight: 600,
+      fontFamily: '"Playfair Display", "Georgia", "Times New Roman", serif',
+      fontWeight: 700,
       fontSize: '2.5rem',
-      lineHeight: 1.3,
+      lineHeight: 1.2,
       letterSpacing: '-0.01em',
     },
+    // Section headers - Condensed sans-serif
     h3: {
-      fontWeight: 600,
+      fontFamily: '"Roboto Condensed", "Arial Narrow", "Helvetica", sans-serif',
+      fontWeight: 700,
       fontSize: '2rem',
-      lineHeight: 1.4,
+      lineHeight: 1.3,
+      letterSpacing: '0.01em',
+      textTransform: 'uppercase',
     },
+    // Subsection headers - Clean sans-serif
     h4: {
+      fontFamily: '"Inter", "Roboto", "Helvetica", sans-serif',
       fontWeight: 600,
       fontSize: '1.5rem',
       lineHeight: 1.4,
     },
-    body1: {
-      fontSize: '1rem',
-      lineHeight: 1.6,
+    // Statistics numbers - Bold display
+    h5: {
+      fontFamily: '"Oswald", "Arial Black", "Helvetica", sans-serif',
+      fontWeight: 700,
+      fontSize: '1.25rem',
+      lineHeight: 1.4,
+      letterSpacing: '0.02em',
     },
-    body2: {
-      fontSize: '0.875rem',
+    // Small headers - Condensed
+    h6: {
+      fontFamily: '"Roboto Condensed", "Arial Narrow", "Helvetica", sans-serif',
+      fontWeight: 400,
+      fontSize: '1rem',
       lineHeight: 1.5,
+      letterSpacing: '0.05em',
+      textTransform: 'uppercase',
+    },
+    // Body text - Readable serif
+    body1: {
+      fontFamily: '"Crimson Text", "Georgia", "Times New Roman", serif',
+      fontSize: '1.1rem',
+      lineHeight: 1.6,
+      fontWeight: 400,
+    },
+    // Secondary body text - Clean sans-serif
+    body2: {
+      fontFamily: '"Inter", "Roboto", "Helvetica", sans-serif',
+      fontSize: '0.95rem',
+      lineHeight: 1.5,
+      fontWeight: 300,
+    },
+    // Buttons and UI elements
+    button: {
+      fontFamily: '"Roboto Condensed", "Arial Narrow", "Helvetica", sans-serif',
+      fontWeight: 700,
+      letterSpacing: '0.05em',
+      textTransform: 'uppercase',
     },
   },
   components: {
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 8,
-          textTransform: 'none',
-          fontWeight: 600,
-          padding: '12px 24px',
+          borderRadius: 12,
+          textTransform: 'uppercase',
+          fontFamily: '"Roboto Condensed", "Arial Narrow", "Helvetica", sans-serif',
+          fontWeight: 700,
+          padding: '14px 28px',
           boxShadow: 'none',
+          backgroundColor: '#ffffff',
+          color: '#000000',
+          letterSpacing: '0.05em',
           '&:hover': {
-            boxShadow: '0 4px 12px rgba(44, 62, 80, 0.15)',
+            backgroundColor: '#f0f0f0',
+            boxShadow: '0 8px 32px rgba(255, 255, 255, 0.2)',
+            transform: 'translateY(-2px)',
           },
         },
       },
@@ -106,18 +169,20 @@ const theme = createTheme({
     MuiCard: {
       styleOverrides: {
         root: {
-          borderRadius: 12,
-          boxShadow: '0 2px 12px rgba(44, 62, 80, 0.08)',
-          border: '1px solid rgba(44, 62, 80, 0.06)',
+          borderRadius: 16,
+          background: 'rgba(255, 255, 255, 0.03)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
         },
       },
     },
     MuiAppBar: {
       styleOverrides: {
         root: {
-          boxShadow: '0 1px 4px rgba(44, 62, 80, 0.1)',
-          backgroundColor: 'rgba(248, 249, 250, 0.95)',
-          backdropFilter: 'blur(8px)',
+          background: 'rgba(0, 0, 0, 0.9)',
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)',
         },
       },
     },
@@ -137,9 +202,9 @@ function App() {
       <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
         {/* Navigation Bar */}
         <AppBar position="fixed" elevation={0} sx={{ 
-          bgcolor: 'rgba(248, 249, 250, 0.95)',
-          backdropFilter: 'blur(8px)',
-          borderBottom: '1px solid rgba(44, 62, 80, 0.06)'
+          background: 'rgba(0, 0, 0, 0.9)',
+          backdropFilter: 'blur(10px)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
         }}>
           <Toolbar sx={{ justifyContent: 'space-between' }}>
             <motion.div
@@ -152,8 +217,10 @@ function App() {
                 component="div" 
                 sx={{ 
                   color: 'primary.main',
+                  fontFamily: '"Roboto Condensed", "Arial Narrow", "Helvetica", sans-serif',
                   fontWeight: 700,
-                  letterSpacing: '-0.01em'
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
                 }}
               >
                 Philadelphia Violence Awareness
@@ -170,10 +237,10 @@ function App() {
                   variant={currentView === 'landing' ? 'contained' : 'text'}
                   onClick={() => handleViewChange('landing')}
                   sx={{ 
-                    color: currentView === 'landing' ? 'white' : 'primary.main',
-                    bgcolor: currentView === 'landing' ? 'primary.main' : 'transparent',
+                    color: currentView === 'landing' ? '#000000' : 'text.primary',
+                    backgroundColor: currentView === 'landing' ? '#ffffff' : 'transparent',
                     '&:hover': {
-                      bgcolor: currentView === 'landing' ? 'primary.dark' : 'rgba(44, 62, 80, 0.04)',
+                      backgroundColor: currentView === 'landing' ? '#f0f0f0' : 'rgba(255, 255, 255, 0.1)',
                     }
                   }}
                 >
@@ -183,10 +250,10 @@ function App() {
                   variant={currentView === 'dashboard' ? 'contained' : 'text'}
                   onClick={() => handleViewChange('dashboard')}
                   sx={{ 
-                    color: currentView === 'dashboard' ? 'white' : 'primary.main',
-                    bgcolor: currentView === 'dashboard' ? 'primary.main' : 'transparent',
+                    color: currentView === 'dashboard' ? '#000000' : 'text.primary',
+                    backgroundColor: currentView === 'dashboard' ? '#ffffff' : 'transparent',
                     '&:hover': {
-                      bgcolor: currentView === 'dashboard' ? 'primary.dark' : 'rgba(44, 62, 80, 0.04)',
+                      backgroundColor: currentView === 'dashboard' ? '#f0f0f0' : 'rgba(255, 255, 255, 0.1)',
                     }
                   }}
                 >

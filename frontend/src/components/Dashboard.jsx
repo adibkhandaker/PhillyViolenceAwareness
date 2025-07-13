@@ -41,6 +41,7 @@ import {
   Search as SearchIcon,
   FilterList as FilterListIcon,
   GetApp as ExportIcon,
+  Clear as ClearIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import CountUp from 'react-countup';
@@ -66,21 +67,26 @@ function TabPanel({ children, value, index, ...other }) {
 }
 
 const Dashboard = () => {
-  const [stats, setStats] = useState(null);
   const [incidents, setIncidents] = useState([]);
-  const [filteredIncidents, setFilteredIncidents] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [tabValue, setTabValue] = useState(0);
-  
-  // Year Analysis State
-  const [selectedYear, setSelectedYear] = useState('all');
-  const [availableYears, setAvailableYears] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCrimeType, setSelectedCrimeType] = useState('all');
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+  
+  // Filter states
+  const [selectedYear, setSelectedYear] = useState('all');
+  const [selectedCrimeType, setSelectedCrimeType] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [addressSearchTerm, setAddressSearchTerm] = useState('');
+  const [addressSearchResults, setAddressSearchResults] = useState([]);
+  const [addressSearchLoading, setAddressSearchLoading] = useState(false);
+  const [useAddressSearch, setUseAddressSearch] = useState(false);
+
+  // Year Analysis State
+  const [availableYears, setAvailableYears] = useState([]);
 
   useEffect(() => {
     fetchData();
@@ -162,12 +168,11 @@ const Dashboard = () => {
       );
     }
 
-    setFilteredIncidents(filtered);
-    setPage(0); // Reset to first page when filters change
+    return filtered;
   };
 
   const getFilteredStats = () => {
-    if (!filteredIncidents.length) {
+    if (!filterIncidents().length) {
       return {
         total: 0,
         homicide: 0,
@@ -177,7 +182,7 @@ const Dashboard = () => {
       };
     }
 
-    return filteredIncidents.reduce((acc, incident) => {
+    return filterIncidents().reduce((acc, incident) => {
       const ucr = incident.ucrGeneral;
       acc.total++;
       if (ucr >= 100 && ucr < 200) acc.homicide++;
@@ -189,6 +194,49 @@ const Dashboard = () => {
   };
 
   const filteredStats = getFilteredStats();
+
+  // Address search functionality
+  const handleAddressSearch = async (searchQuery) => {
+    if (!searchQuery.trim()) {
+      setAddressSearchResults([]);
+      setUseAddressSearch(false);
+      return;
+    }
+
+    setAddressSearchLoading(true);
+    try {
+      const results = await incidentAPI.getIncidentsByAddress(searchQuery);
+      setAddressSearchResults(results);
+      setUseAddressSearch(true);
+      setPage(0); // Reset pagination
+    } catch (err) {
+      console.error('Address search failed:', err);
+      setError('Failed to search by address. Please try again.');
+      setAddressSearchResults([]);
+      setUseAddressSearch(false);
+    } finally {
+      setAddressSearchLoading(false);
+    }
+  };
+
+  const clearAddressSearch = () => {
+    setAddressSearchTerm('');
+    setAddressSearchResults([]);
+    setUseAddressSearch(false);
+    setPage(0);
+  };
+
+  // Handle Enter key press for address search
+  const handleAddressSearchKeyPress = (event) => {
+    if (event.key === 'Enter') {
+      handleAddressSearch(addressSearchTerm);
+    }
+  };
+
+  // Handle manual search button click
+  const handleSearchButtonClick = () => {
+    handleAddressSearch(addressSearchTerm);
+  };
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -231,6 +279,8 @@ const Dashboard = () => {
       </Container>
     );
   }
+
+  const displayData = useAddressSearch ? addressSearchResults : filterIncidents();
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -523,6 +573,115 @@ const Dashboard = () => {
               Detailed Crime Records
             </Typography>
             
+            {/* Search Controls */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Search by Address or Location"
+                  value={addressSearchTerm}
+                  onChange={(e) => setAddressSearchTerm(e.target.value)}
+                  onKeyPress={handleAddressSearchKeyPress}
+                  placeholder="Enter street name, address, or intersection..."
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
+                    endAdornment: addressSearchTerm && (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={handleSearchButtonClick}
+                          edge="end"
+                          size="small"
+                        >
+                          <SearchIcon />
+                        </IconButton>
+                        <IconButton
+                          onClick={clearAddressSearch}
+                          edge="end"
+                          size="small"
+                        >
+                          <ClearIcon />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Search Description or General Location"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search in crime descriptions..."
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <FilterListIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+            </Grid>
+
+            {/* Loading indicator for address search */}
+            {addressSearchLoading && (
+              <Box sx={{ mb: 2 }}>
+                <LinearProgress />
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  Searching for incidents at this location...
+                </Typography>
+              </Box>
+            )}
+
+            {/* Search Results Summary */}
+            {useAddressSearch && addressSearchResults.length > 0 && (
+              <Box sx={{ mb: 3 }}>
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  Found {addressSearchResults.length} incidents matching "{addressSearchTerm}"
+                </Alert>
+                <Grid container spacing={2}>
+                  <Grid item xs={6} sm={3}>
+                    <Card sx={{ bgcolor: 'rgba(44, 62, 80, 0.05)', textAlign: 'center', p: 2 }}>
+                      <Typography variant="h5" sx={{ color: 'primary.main', fontWeight: 700 }}>
+                        {addressSearchResults.length}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">Total Found</Typography>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Card sx={{ bgcolor: 'rgba(192, 57, 43, 0.05)', textAlign: 'center', p: 2 }}>
+                      <Typography variant="h5" sx={{ color: 'error.main', fontWeight: 700 }}>
+                        {addressSearchResults.filter(i => i.ucrGeneral === '100').length}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">Homicides</Typography>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Card sx={{ bgcolor: 'rgba(214, 137, 16, 0.05)', textAlign: 'center', p: 2 }}>
+                      <Typography variant="h5" sx={{ color: 'warning.main', fontWeight: 700 }}>
+                        {addressSearchResults.filter(i => i.ucrGeneral === '300').length}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">Robberies</Typography>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Card sx={{ bgcolor: 'rgba(214, 137, 16, 0.08)', textAlign: 'center', p: 2 }}>
+                      <Typography variant="h5" sx={{ color: 'warning.dark', fontWeight: 700 }}>
+                        {addressSearchResults.filter(i => i.ucrGeneral === '400').length}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">Assaults</Typography>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
+
+            {/* Results Table */}
             <Paper elevation={0} sx={{ border: '1px solid rgba(44, 62, 80, 0.08)' }}>
               <TableContainer>
                 <Table>
@@ -532,16 +691,20 @@ const Dashboard = () => {
                       <TableCell sx={{ fontWeight: 600 }}>Crime Type</TableCell>
                       <TableCell sx={{ fontWeight: 600 }}>Location</TableCell>
                       <TableCell sx={{ fontWeight: 600 }}>District</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Time</TableCell>
                       <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredIncidents
+                    {displayData
                       .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                       .map((incident, index) => (
                         <TableRow key={incident.id || index} hover>
                           <TableCell>
-                            {new Date(incident.dispatchDateTime).toLocaleDateString()}
+                            {incident.dispatchDateTime ? 
+                              new Date(incident.dispatchDateTime).toLocaleDateString() : 
+                              incident.dispatchDate || 'Unknown'
+                            }
                           </TableCell>
                           <TableCell>
                             <Chip
@@ -550,9 +713,18 @@ const Dashboard = () => {
                               size="small"
                             />
                           </TableCell>
-                          <TableCell>{incident.locationBlock || 'N/A'}</TableCell>
-                          <TableCell>{incident.dcDistrict || 'N/A'}</TableCell>
-                          <TableCell>{incident.textGeneralCode || 'N/A'}</TableCell>
+                          <TableCell sx={{ maxWidth: 200 }}>
+                            <Typography variant="body2" noWrap title={incident.locationBlock}>
+                              {incident.locationBlock || 'Unknown Location'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>{incident.dcDistrict || 'Unknown'}</TableCell>
+                          <TableCell>{incident.dispatchTime || 'Unknown'}</TableCell>
+                          <TableCell sx={{ maxWidth: 150 }}>
+                            <Typography variant="body2" noWrap title={incident.textGeneralCode}>
+                              {incident.textGeneralCode || 'N/A'}
+                            </Typography>
+                          </TableCell>
                         </TableRow>
                       ))}
                   </TableBody>
@@ -562,7 +734,7 @@ const Dashboard = () => {
               <TablePagination
                 rowsPerPageOptions={[10, 25, 50, 100]}
                 component="div"
-                count={filteredIncidents.length}
+                count={displayData.length}
                 rowsPerPage={rowsPerPage}
                 page={page}
                 onPageChange={handleChangePage}
