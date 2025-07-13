@@ -54,11 +54,8 @@ public class IncidentService implements ApplicationRunner {
         } else {
             System.out.println("Database already contains sufficient data (" + totalRecords + " records). Skipping full initialization.");
             System.out.println("Only updating current year (" + CURRENT_YEAR + ") data if needed...");
-            // Only update current year if we have very few 2025 records
-            long currentYearCount = incidentRepository.count(); // This is a simple check, could be improved
-            if (currentYearCount < 250000) { // Only update if we have reasonable amount of historical data
-                updateCurrentYearData();
-            }
+            // Always update current year data to ensure we have the latest crimes
+            updateCurrentYearData();
         }
         System.out.println("=== INITIALIZATION COMPLETE ===");
     }
@@ -173,7 +170,7 @@ public class IncidentService implements ApplicationRunner {
         String line;
         boolean isFirstLine = true;
         int processedCount = 0;
-        int maxRecords = (year == CURRENT_YEAR) ? 1000 : 5000; // Higher limit for historical data
+        int maxRecords = Integer.MAX_VALUE; // No limit - get all available records
         
         while ((line = reader.readLine()) != null && processedCount < maxRecords) {
             if (isFirstLine) {
