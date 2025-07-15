@@ -3,15 +3,12 @@ import {
   Typography,
   Grid,
   Card,
-  CardContent,
   Button,
   Box,
   CircularProgress,
   Alert,
   Chip,
-  Divider,
   IconButton,
-  Tooltip,
   FormControl,
   InputLabel,
   Select,
@@ -27,44 +24,44 @@ import {
   TablePagination,
   Paper,
   Container,
-  Tabs,
-  Tab,
   LinearProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider,
 } from '@mui/material';
 import { 
   Refresh as RefreshIcon,
-  TrendingUp as TrendingUpIcon,
-  Security as SecurityIcon,
-  LocationOn as LocationOnIcon,
-  Assessment as AssessmentIcon,
-  CalendarToday as CalendarIcon,
   Search as SearchIcon,
   FilterList as FilterListIcon,
-  GetApp as ExportIcon,
   Clear as ClearIcon,
+  Close as CloseIcon,
+  Map as MapIcon,
+  LocationOn as LocationOnIcon,
 } from '@mui/icons-material';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
 import { motion } from 'framer-motion';
-import CountUp from 'react-countup';
 import { incidentAPI } from '../services/api';
 
-// Tab Panel Component
-function TabPanel({ children, value, index, ...other }) {
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`dashboard-tabpanel-${index}`}
-      aria-labelledby={`dashboard-tab-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <Box sx={{ py: 3 }}>
-          {children}
-        </Box>
-      )}
-    </div>
-  );
-}
+// Fix for default Leaflet marker icons in React
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
+
+// Custom red marker for crime locations
+const crimeMarkerIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
 const Dashboard = () => {
   const [incidents, setIncidents] = useState([]);
@@ -72,7 +69,6 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [tabValue, setTabValue] = useState(0);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   
@@ -87,6 +83,11 @@ const Dashboard = () => {
 
   // Year Analysis State
   const [availableYears, setAvailableYears] = useState([]);
+
+  // Incident Detail Modal State
+  const [selectedIncident, setSelectedIncident] = useState(null);
+  const [incidentDetailOpen, setIncidentDetailOpen] = useState(false);
+  const [incidentDetailLoading, setIncidentDetailLoading] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -107,10 +108,22 @@ const Dashboard = () => {
       setStats(statsResponse.data);
       setIncidents(incidentsResponse.data);
       
-      // Extract available years
-      const years = [...new Set(incidentsResponse.data.map(incident => 
-        new Date(incident.dispatchDateTime).getFullYear()
-      ))].sort((a, b) => b - a);
+      // Extract available years - use dispatchDateTime first, fallback to dispatchDate
+      const years = [...new Set(incidentsResponse.data.map(incident => {
+        // Try dispatchDateTime first (more reliable), then fallback to dispatchDate
+        let date = null;
+        if (incident.dispatchDateTime) {
+          date = new Date(incident.dispatchDateTime);
+        } else if (incident.dispatchDate) {
+          date = new Date(incident.dispatchDate);
+        }
+        
+        // Only include valid dates
+        if (date && !isNaN(date.getTime())) {
+          return date.getFullYear();
+        }
+        return null;
+      }).filter(year => year !== null))].sort((a, b) => b - a);
       setAvailableYears(years);
       
       setError(null);
@@ -140,9 +153,21 @@ const Dashboard = () => {
 
     // Filter by year
     if (selectedYear !== 'all') {
-      filtered = filtered.filter(incident => 
-        new Date(incident.dispatchDateTime).getFullYear() === parseInt(selectedYear)
-      );
+      filtered = filtered.filter(incident => {
+        // Try dispatchDateTime first (more reliable), then fallback to dispatchDate
+        let date = null;
+        if (incident.dispatchDateTime) {
+          date = new Date(incident.dispatchDateTime);
+        } else if (incident.dispatchDate) {
+          date = new Date(incident.dispatchDate);
+        }
+        
+        // Only include valid dates that match the selected year
+        if (date && !isNaN(date.getTime())) {
+          return date.getFullYear() === parseInt(selectedYear);
+        }
+        return false;
+      });
     }
 
     // Filter by crime type
@@ -170,30 +195,6 @@ const Dashboard = () => {
 
     return filtered;
   };
-
-  const getFilteredStats = () => {
-    if (!filterIncidents().length) {
-      return {
-        total: 0,
-        homicide: 0,
-        rape: 0,
-        robbery: 0,
-        assault: 0,
-      };
-    }
-
-    return filterIncidents().reduce((acc, incident) => {
-      const ucr = incident.ucrGeneral;
-      acc.total++;
-      if (ucr >= 100 && ucr < 200) acc.homicide++;
-      else if (ucr >= 200 && ucr < 300) acc.rape++;
-      else if (ucr >= 300 && ucr < 400) acc.robbery++;
-      else if (ucr >= 400 && ucr < 500) acc.assault++;
-      return acc;
-    }, { total: 0, homicide: 0, rape: 0, robbery: 0, assault: 0 });
-  };
-
-  const filteredStats = getFilteredStats();
 
   // Address search functionality
   const handleAddressSearch = async (searchQuery) => {
@@ -238,8 +239,28 @@ const Dashboard = () => {
     handleAddressSearch(addressSearchTerm);
   };
 
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
+  // Handle incident row click to show details
+  const handleIncidentClick = async (incident) => {
+    setIncidentDetailLoading(true);
+    setIncidentDetailOpen(true);
+    
+    try {
+      // Fetch detailed incident data by ID
+      const response = await incidentAPI.getIncidentById(incident.id);
+      setSelectedIncident(response.data);
+    } catch (err) {
+      console.error('Error fetching incident details:', err);
+      setSelectedIncident(incident); // Fallback to the data we already have
+    } finally {
+      setIncidentDetailLoading(false);
+    }
+  };
+
+  // Handle closing the incident detail modal
+  const handleCloseIncidentDetail = () => {
+    setIncidentDetailOpen(false);
+    setSelectedIncident(null);
+    setIncidentDetailLoading(false);
   };
 
   const handleChangePage = (event, newPage) => {
@@ -316,434 +337,387 @@ const Dashboard = () => {
           </Alert>
         )}
 
-        {/* Navigation Tabs */}
-        <Paper elevation={0} sx={{ mb: 4, bgcolor: 'background.paper', borderRadius: 2 }}>
-          <Tabs
-            value={tabValue}
-            onChange={handleTabChange}
-            variant="fullWidth"
-            sx={{
-              borderBottom: 1,
-              borderColor: 'divider',
-              '& .MuiTab-root': {
-                textTransform: 'none',
-                fontWeight: 600,
-                fontSize: '1rem',
-                py: 2,
-              },
-            }}
-          >
-            <Tab 
-              label="Overview Statistics" 
-              icon={<AssessmentIcon />}
-              iconPosition="start"
-            />
-            <Tab 
-              label="Year-by-Year Analysis" 
-              icon={<CalendarIcon />}
-              iconPosition="start"
-            />
-            <Tab 
-              label="Detailed Records" 
-              icon={<FilterListIcon />}
-              iconPosition="start"
-            />
-          </Tabs>
-        </Paper>
-
-        {/* Overview Statistics Tab */}
-        <TabPanel value={tabValue} index={0}>
-          <Grid container spacing={3}>
-            {/* Overall Statistics Cards */}
-            <Grid item xs={12} sm={6} md={3}>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1 }}
-              >
-                <Card sx={{ 
-                  bgcolor: 'rgba(192, 57, 43, 0.05)',
-                  border: '1px solid rgba(192, 57, 43, 0.2)',
-                  '&:hover': { transform: 'translateY(-4px)' },
-                  transition: 'all 0.3s ease',
-                }}>
-                  <CardContent sx={{ textAlign: 'center', p: 3 }}>
-                    <SecurityIcon sx={{ fontSize: 48, color: 'error.main', mb: 2 }} />
-                    <Typography variant="h3" component="div" sx={{ color: 'error.main', fontWeight: 700, mb: 1 }}>
-                      <CountUp end={stats?.totalIncidents || 0} duration={2.5} separator="," />
-                    </Typography>
-                    <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
-                      Total Incidents
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      All violent crimes recorded
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </motion.div>
+        {/* Detailed Crime Records */}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" component="h2" sx={{ mb: 3, color: 'primary.main' }}>
+            Crime Records
+          </Typography>
+          
+          {/* Filter Controls */}
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid item xs={12} sm={6} md={4}>
+              <FormControl fullWidth>
+                <InputLabel>Year</InputLabel>
+                <Select
+                  value={selectedYear}
+                  label="Year"
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                >
+                  <MenuItem value="all">All Years</MenuItem>
+                  {availableYears.map(year => (
+                    <MenuItem key={year} value={year.toString()}>{year}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={4}>
+              <FormControl fullWidth>
+                <InputLabel>Crime Type</InputLabel>
+                <Select
+                  value={selectedCrimeType}
+                  label="Crime Type"
+                  onChange={(e) => setSelectedCrimeType(e.target.value)}
+                >
+                  <MenuItem value="all">All Types</MenuItem>
+                  <MenuItem value="homicide">Homicide</MenuItem>
+                  <MenuItem value="rape">Sexual Assault</MenuItem>
+                  <MenuItem value="robbery">Robbery</MenuItem>
+                  <MenuItem value="assault">Aggravated Assault</MenuItem>
+                </Select>
+              </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-              >
-                <Card sx={{ 
-                  bgcolor: 'rgba(192, 57, 43, 0.08)',
-                  border: '1px solid rgba(192, 57, 43, 0.3)',
-                  '&:hover': { transform: 'translateY(-4px)' },
-                  transition: 'all 0.3s ease',
-                }}>
-                  <CardContent sx={{ textAlign: 'center', p: 3 }}>
-                    <TrendingUpIcon sx={{ fontSize: 48, color: 'error.dark', mb: 2 }} />
-                    <Typography variant="h3" component="div" sx={{ color: 'error.dark', fontWeight: 700, mb: 1 }}>
-                      <CountUp end={stats?.homicides || 0} duration={2.5} separator="," />
-                    </Typography>
-                    <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
-                      Homicides
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Most serious violent crimes
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={3}>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-              >
-                <Card sx={{ 
-                  bgcolor: 'rgba(214, 137, 16, 0.05)',
-                  border: '1px solid rgba(214, 137, 16, 0.2)',
-                  '&:hover': { transform: 'translateY(-4px)' },
-                  transition: 'all 0.3s ease',
-                }}>
-                  <CardContent sx={{ textAlign: 'center', p: 3 }}>
-                    <LocationOnIcon sx={{ fontSize: 48, color: 'warning.main', mb: 2 }} />
-                    <Typography variant="h3" component="div" sx={{ color: 'warning.main', fontWeight: 700, mb: 1 }}>
-                      <CountUp end={stats?.robberies || 0} duration={2.5} separator="," />
-                    </Typography>
-                    <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
-                      Robberies
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Property crimes with force
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={3}>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-              >
-                <Card sx={{ 
-                  bgcolor: 'rgba(214, 137, 16, 0.08)',
-                  border: '1px solid rgba(214, 137, 16, 0.3)',
-                  '&:hover': { transform: 'translateY(-4px)' },
-                  transition: 'all 0.3s ease',
-                }}>
-                  <CardContent sx={{ textAlign: 'center', p: 3 }}>
-                    <AssessmentIcon sx={{ fontSize: 48, color: 'warning.dark', mb: 2 }} />
-                    <Typography variant="h3" component="div" sx={{ color: 'warning.dark', fontWeight: 700, mb: 1 }}>
-                      <CountUp end={stats?.assaults || 0} duration={2.5} separator="," />
-                    </Typography>
-                    <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
-                      Assaults
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Aggravated assault cases
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </motion.div>
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                label="Search Description or General Location"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search in crime descriptions..."
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <FilterListIcon />
+                    </InputAdornment>
+                  ),
+                }}
+              />
             </Grid>
           </Grid>
-        </TabPanel>
 
-        {/* Year-by-Year Analysis Tab */}
-        <TabPanel value={tabValue} index={1}>
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="h4" component="h2" sx={{ mb: 3, color: 'primary.main' }}>
-              Year-by-Year Analysis
-            </Typography>
-            
-            {/* Filter Controls */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth>
-                  <InputLabel>Year</InputLabel>
-                  <Select
-                    value={selectedYear}
-                    label="Year"
-                    onChange={(e) => setSelectedYear(e.target.value)}
-                  >
-                    <MenuItem value="all">All Years</MenuItem>
-                    {availableYears.map(year => (
-                      <MenuItem key={year} value={year.toString()}>{year}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth>
-                  <InputLabel>Crime Type</InputLabel>
-                  <Select
-                    value={selectedCrimeType}
-                    label="Crime Type"
-                    onChange={(e) => setSelectedCrimeType(e.target.value)}
-                  >
-                    <MenuItem value="all">All Types</MenuItem>
-                    <MenuItem value="homicide">Homicide</MenuItem>
-                    <MenuItem value="rape">Sexual Assault</MenuItem>
-                    <MenuItem value="robbery">Robbery</MenuItem>
-                    <MenuItem value="assault">Aggravated Assault</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              
-              <Grid item xs={12} sm={6} md={6}>
-                <TextField
-                  fullWidth
-                  label="Search Location or Description"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Grid>
-            </Grid>
+          {/* Loading indicator for address search */}
+          {addressSearchLoading && (
+            <Box sx={{ mb: 2 }}>
+              <LinearProgress />
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Searching for incidents at this location...
+              </Typography>
+            </Box>
+          )}
 
-            {/* Filtered Statistics */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card sx={{ bgcolor: 'rgba(44, 62, 80, 0.05)', textAlign: 'center', p: 2 }}>
-                  <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 700 }}>
-                    <CountUp end={filteredStats.total} duration={1.5} separator="," />
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary">Total Filtered</Typography>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card sx={{ bgcolor: 'rgba(192, 57, 43, 0.05)', textAlign: 'center', p: 2 }}>
-                  <Typography variant="h4" sx={{ color: 'error.main', fontWeight: 700 }}>
-                    <CountUp end={filteredStats.homicide} duration={1.5} separator="," />
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary">Homicides</Typography>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card sx={{ bgcolor: 'rgba(214, 137, 16, 0.05)', textAlign: 'center', p: 2 }}>
-                  <Typography variant="h4" sx={{ color: 'warning.main', fontWeight: 700 }}>
-                    <CountUp end={filteredStats.robbery} duration={1.5} separator="," />
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary">Robberies</Typography>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card sx={{ bgcolor: 'rgba(214, 137, 16, 0.08)', textAlign: 'center', p: 2 }}>
-                  <Typography variant="h4" sx={{ color: 'warning.dark', fontWeight: 700 }}>
-                    <CountUp end={filteredStats.assault} duration={1.5} separator="," />
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary">Assaults</Typography>
-                </Card>
-              </Grid>
-            </Grid>
-          </Box>
-        </TabPanel>
-
-        {/* Detailed Records Tab */}
-        <TabPanel value={tabValue} index={2}>
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="h4" component="h2" sx={{ mb: 3, color: 'primary.main' }}>
-              Detailed Crime Records
-            </Typography>
-            
-            {/* Search Controls */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Search by Address or Location"
-                  value={addressSearchTerm}
-                  onChange={(e) => setAddressSearchTerm(e.target.value)}
-                  onKeyPress={handleAddressSearchKeyPress}
-                  placeholder="Enter street name, address, or intersection..."
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon />
-                      </InputAdornment>
-                    ),
-                    endAdornment: addressSearchTerm && (
-                      <InputAdornment position="end">
-                        <IconButton
-                          onClick={handleSearchButtonClick}
-                          edge="end"
-                          size="small"
-                        >
-                          <SearchIcon />
-                        </IconButton>
-                        <IconButton
-                          onClick={clearAddressSearch}
-                          edge="end"
-                          size="small"
-                        >
-                          <ClearIcon />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Search Description or General Location"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search in crime descriptions..."
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <FilterListIcon />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Grid>
-            </Grid>
-
-            {/* Loading indicator for address search */}
-            {addressSearchLoading && (
-              <Box sx={{ mb: 2 }}>
-                <LinearProgress />
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  Searching for incidents at this location...
-                </Typography>
-              </Box>
-            )}
-
-            {/* Search Results Summary */}
-            {useAddressSearch && addressSearchResults.length > 0 && (
-              <Box sx={{ mb: 3 }}>
-                <Alert severity="info" sx={{ mb: 2 }}>
-                  Found {addressSearchResults.length} incidents matching "{addressSearchTerm}"
-                </Alert>
-                <Grid container spacing={2}>
-                  <Grid item xs={6} sm={3}>
-                    <Card sx={{ bgcolor: 'rgba(44, 62, 80, 0.05)', textAlign: 'center', p: 2 }}>
-                      <Typography variant="h5" sx={{ color: 'primary.main', fontWeight: 700 }}>
-                        {addressSearchResults.length}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">Total Found</Typography>
-                    </Card>
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <Card sx={{ bgcolor: 'rgba(192, 57, 43, 0.05)', textAlign: 'center', p: 2 }}>
-                      <Typography variant="h5" sx={{ color: 'error.main', fontWeight: 700 }}>
-                        {addressSearchResults.filter(i => i.ucrGeneral === '100').length}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">Homicides</Typography>
-                    </Card>
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <Card sx={{ bgcolor: 'rgba(214, 137, 16, 0.05)', textAlign: 'center', p: 2 }}>
-                      <Typography variant="h5" sx={{ color: 'warning.main', fontWeight: 700 }}>
-                        {addressSearchResults.filter(i => i.ucrGeneral === '300').length}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">Robberies</Typography>
-                    </Card>
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <Card sx={{ bgcolor: 'rgba(214, 137, 16, 0.08)', textAlign: 'center', p: 2 }}>
-                      <Typography variant="h5" sx={{ color: 'warning.dark', fontWeight: 700 }}>
-                        {addressSearchResults.filter(i => i.ucrGeneral === '400').length}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">Assaults</Typography>
-                    </Card>
-                  </Grid>
+          {/* Search Results Summary */}
+          {useAddressSearch && addressSearchResults.length > 0 && (
+            <Box sx={{ mb: 3 }}>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Found {addressSearchResults.length} incidents matching "{addressSearchTerm}"
+              </Alert>
+              <Grid container spacing={2}>
+                <Grid item xs={6} sm={3}>
+                  <Card sx={{ bgcolor: 'rgba(44, 62, 80, 0.05)', textAlign: 'center', p: 2 }}>
+                    <Typography variant="h5" sx={{ color: 'primary.main', fontWeight: 700 }}>
+                      {addressSearchResults.length}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">Total Found</Typography>
+                  </Card>
                 </Grid>
-              </Box>
-            )}
+                <Grid item xs={6} sm={3}>
+                  <Card sx={{ bgcolor: 'rgba(192, 57, 43, 0.05)', textAlign: 'center', p: 2 }}>
+                    <Typography variant="h5" sx={{ color: 'error.main', fontWeight: 700 }}>
+                      {addressSearchResults.filter(i => i.ucrGeneral === '100').length}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">Homicides</Typography>
+                  </Card>
+                </Grid>
+                <Grid item xs={6} sm={3}>
+                  <Card sx={{ bgcolor: 'rgba(214, 137, 16, 0.05)', textAlign: 'center', p: 2 }}>
+                    <Typography variant="h5" sx={{ color: 'warning.main', fontWeight: 700 }}>
+                      {addressSearchResults.filter(i => i.ucrGeneral === '300').length}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">Robberies</Typography>
+                  </Card>
+                </Grid>
+                <Grid item xs={6} sm={3}>
+                  <Card sx={{ bgcolor: 'rgba(214, 137, 16, 0.08)', textAlign: 'center', p: 2 }}>
+                    <Typography variant="h5" sx={{ color: 'warning.dark', fontWeight: 700 }}>
+                      {addressSearchResults.filter(i => i.ucrGeneral === '400').length}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">Assaults</Typography>
+                  </Card>
+                </Grid>
+              </Grid>
+            </Box>
+          )}
 
-            {/* Results Table */}
-            <Paper elevation={0} sx={{ border: '1px solid rgba(44, 62, 80, 0.08)' }}>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ bgcolor: 'rgba(44, 62, 80, 0.04)' }}>
-                      <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Crime Type</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Location</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>District</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Time</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {displayData
-                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                      .map((incident, index) => (
-                        <TableRow key={incident.id || index} hover>
-                          <TableCell>
-                            {incident.dispatchDateTime ? 
-                              new Date(incident.dispatchDateTime).toLocaleDateString() : 
-                              incident.dispatchDate || 'Unknown'
-                            }
-                          </TableCell>
-                          <TableCell>
-                            <Chip
-                              label={getCrimeTypeLabel(incident.ucrGeneral)}
-                              color={getCrimeTypeColor(incident.ucrGeneral)}
-                              size="small"
-                            />
-                          </TableCell>
-                          <TableCell sx={{ maxWidth: 200 }}>
-                            <Typography variant="body2" noWrap title={incident.locationBlock}>
-                              {incident.locationBlock || 'Unknown Location'}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>{incident.dcDistrict || 'Unknown'}</TableCell>
-                          <TableCell>{incident.dispatchTime || 'Unknown'}</TableCell>
-                          <TableCell sx={{ maxWidth: 150 }}>
-                            <Typography variant="body2" noWrap title={incident.textGeneralCode}>
-                              {incident.textGeneralCode || 'N/A'}
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              
-              <TablePagination
-                rowsPerPageOptions={[10, 25, 50, 100]}
-                component="div"
-                count={displayData.length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-              />
-            </Paper>
+          {/* Results Table */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+              💡 Click on any row to view detailed incident information
+            </Typography>
           </Box>
-        </TabPanel>
+          <Paper elevation={0} sx={{ border: '1px solid rgba(44, 62, 80, 0.08)' }}>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: 'rgba(44, 62, 80, 0.04)' }}>
+                    <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Crime Type</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Location</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>District</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Time</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {displayData
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((incident, index) => (
+                      <TableRow 
+                        key={incident.id || index} 
+                        hover 
+                        onClick={() => handleIncidentClick(incident)}
+                        sx={{ 
+                          cursor: 'pointer',
+                          '&:hover': {
+                            backgroundColor: 'rgba(44, 62, 80, 0.04)'
+                          }
+                        }}
+                      >
+                        <TableCell>
+                          {incident.dispatchDateTime ? 
+                            new Date(incident.dispatchDateTime).toLocaleDateString() : 
+                            incident.dispatchDate || 'Unknown'
+                          }
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={getCrimeTypeLabel(incident.ucrGeneral)}
+                            color={getCrimeTypeColor(incident.ucrGeneral)}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell sx={{ maxWidth: 200 }}>
+                          <Typography variant="body2" noWrap title={incident.locationBlock}>
+                            {incident.locationBlock || 'Unknown Location'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>{incident.dcDistrict || 'Unknown'}</TableCell>
+                        <TableCell>{incident.dispatchTime || 'Unknown'}</TableCell>
+                        <TableCell sx={{ maxWidth: 150 }}>
+                          <Typography variant="body2" noWrap title={incident.textGeneralCode}>
+                            {incident.textGeneralCode || 'N/A'}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            
+            <TablePagination
+              rowsPerPageOptions={[10, 25, 50, 100]}
+              component="div"
+              count={displayData.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+            />
+          </Paper>
+        </Box>
       </motion.div>
+
+      {/* Incident Detail Modal */}
+      <Dialog
+        open={incidentDetailOpen}
+        onClose={handleCloseIncidentDetail}
+        maxWidth="lg"
+        fullWidth
+        TransitionComponent={motion.div}
+        disableScrollLock
+      >
+        <DialogTitle>
+          {selectedIncident ? `Incident Details: ${selectedIncident.textGeneralCode || selectedIncident.locationBlock}` : 'Incident Details'}
+          <IconButton
+            onClick={handleCloseIncidentDetail}
+            sx={{ position: 'absolute', right: 8, top: 8 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent 
+          dividers
+          sx={{ 
+            maxHeight: '70vh', 
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            '&::-webkit-scrollbar': {
+              width: '8px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: '#f1f1f1',
+              borderRadius: '4px',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: '#c1c1c1',
+              borderRadius: '4px',
+            },
+            '&::-webkit-scrollbar-thumb:hover': {
+              background: '#a8a8a8',
+            },
+          }}
+        >
+          {incidentDetailLoading ? (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <CircularProgress size={40} />
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Loading incident details...
+              </Typography>
+            </Box>
+          ) : selectedIncident ? (
+            <Box>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="h6" sx={{ color: 'primary.main' }}>
+                    Basic Information
+                  </Typography>
+                  <Divider sx={{ my: 1 }} />
+                  <Typography variant="body2">
+                    <strong>ID:</strong> {selectedIncident.id}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Date:</strong> {selectedIncident.dispatchDateTime ? new Date(selectedIncident.dispatchDateTime).toLocaleDateString() : selectedIncident.dispatchDate || 'N/A'}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Time:</strong> {selectedIncident.dispatchTime || 'N/A'}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Crime Type:</strong> {getCrimeTypeLabel(selectedIncident.ucrGeneral)}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Location:</strong> {selectedIncident.locationBlock || 'N/A'}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>District:</strong> {selectedIncident.dcDistrict || 'N/A'}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Description:</strong> {selectedIncident.textGeneralCode || 'N/A'}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="h6" sx={{ color: 'primary.main' }}>
+                    Additional Details
+                  </Typography>
+                  <Divider sx={{ my: 1 }} />
+                  <Typography variant="body2">
+                    <strong>UCR General Code:</strong> {selectedIncident.ucrGeneral}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Block:</strong> {selectedIncident.locationBlock}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Latitude:</strong> {selectedIncident.latitude || 'N/A'}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Longitude:</strong> {selectedIncident.longitude || 'N/A'}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Dispatch Type:</strong> {selectedIncident.dispatchType || 'N/A'}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Beat:</strong> {selectedIncident.beat || 'N/A'}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Neighborhood:</strong> {selectedIncident.neighborhood || 'N/A'}
+                  </Typography>
+                </Grid>
+              </Grid>
+              
+              {/* Location Map */}
+              {selectedIncident.latitude && selectedIncident.longitude && (
+                <Box sx={{ mt: 3 }}>
+                  <Typography variant="h6" sx={{ color: 'primary.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <MapIcon />
+                    Crime Location
+                  </Typography>
+                  <Divider sx={{ my: 1 }} />
+                  <Box 
+                    sx={{ 
+                      height: 300, 
+                      width: '100%', 
+                      borderRadius: 1, 
+                      overflow: 'hidden',
+                      border: '1px solid',
+                      borderColor: 'divider'
+                    }}
+                  >
+                    <MapContainer 
+                      center={[selectedIncident.latitude, selectedIncident.longitude]} 
+                      zoom={16} 
+                      style={{ height: '100%', width: '100%' }}
+                      zoomControl={true}
+                    >
+                      <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      />
+                      <Marker 
+                        position={[selectedIncident.latitude, selectedIncident.longitude]}
+                        icon={crimeMarkerIcon}
+                      >
+                        <Popup>
+                          <Box sx={{ minWidth: 200 }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: 'error.main' }}>
+                              {getCrimeTypeLabel(selectedIncident.ucrGeneral)}
+                            </Typography>
+                            <Typography variant="body2" sx={{ mt: 1 }}>
+                              <LocationOnIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} />
+                              {selectedIncident.locationBlock}
+                            </Typography>
+                            <Typography variant="body2">
+                              <strong>Date:</strong> {selectedIncident.dispatchDateTime ? new Date(selectedIncident.dispatchDateTime).toLocaleDateString() : selectedIncident.dispatchDate}
+                            </Typography>
+                            <Typography variant="body2">
+                              <strong>Time:</strong> {selectedIncident.dispatchTime || 'N/A'}
+                            </Typography>
+                            <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'text.secondary' }}>
+                              Lat: {selectedIncident.latitude.toFixed(6)}, Lng: {selectedIncident.longitude.toFixed(6)}
+                            </Typography>
+                          </Box>
+                        </Popup>
+                      </Marker>
+                    </MapContainer>
+                  </Box>
+                  <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'text.secondary', textAlign: 'center' }}>
+                    📍 Exact location: {selectedIncident.latitude.toFixed(6)}, {selectedIncident.longitude.toFixed(6)}
+                  </Typography>
+                </Box>
+              )}
+              
+              {/* No Location Data Message */}
+              {(!selectedIncident.latitude || !selectedIncident.longitude) && (
+                <Box sx={{ mt: 3, textAlign: 'center', py: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                  <MapIcon sx={{ fontSize: 40, color: 'grey.400', mb: 1 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    Location coordinates are not available for this incident
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography variant="body2" color="text.secondary">
+                Select an incident from the table to view its details.
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseIncidentDetail} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

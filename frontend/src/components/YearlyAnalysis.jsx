@@ -59,11 +59,22 @@ const YearlyAnalysis = () => {
       setFilteredIncidents(response.data);
       setError(null);
       
-      // Extract unique years from the data
+      // Extract unique years from the data - use dispatchDateTime first, fallback to dispatchDate
       const years = [...new Set(response.data.map(incident => {
-        const date = new Date(incident.dispatchDate);
-        return date.getFullYear();
-      }))].sort((a, b) => b - a);
+        // Try dispatchDateTime first (more reliable), then fallback to dispatchDate
+        let date = null;
+        if (incident.dispatchDateTime) {
+          date = new Date(incident.dispatchDateTime);
+        } else if (incident.dispatchDate) {
+          date = new Date(incident.dispatchDate);
+        }
+        
+        // Only include valid dates
+        if (date && !isNaN(date.getTime())) {
+          return date.getFullYear();
+        }
+        return null;
+      }).filter(year => year !== null))].sort((a, b) => b - a);
       
       setAvailableYears(years);
       

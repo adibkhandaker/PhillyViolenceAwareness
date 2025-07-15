@@ -53,20 +53,42 @@ const AwarenessLanding = ({ onNavigateToDashboard }) => {
       
       setStats(statsResponse.data);
       
-      // Find the most recent year with data
+      // Find the most recent year with data - use dispatchDateTime first, fallback to dispatchDate
       const yearsWithData = [...new Set(allIncidents.data.map(incident => {
-        const date = new Date(incident.dispatchDate);
-        return date.getFullYear();
-      }))].sort((a, b) => b - a);
+        // Try dispatchDateTime first (more reliable), then fallback to dispatchDate
+        let date = null;
+        if (incident.dispatchDateTime) {
+          date = new Date(incident.dispatchDateTime);
+        } else if (incident.dispatchDate) {
+          date = new Date(incident.dispatchDate);
+        }
+        
+        // Only include valid dates
+        if (date && !isNaN(date.getTime())) {
+          return date.getFullYear();
+        }
+        return null;
+      }).filter(year => year !== null))].sort((a, b) => b - a);
       
       // Use the most recent year with data, fallback to 2025
       const mostRecentYear = yearsWithData.length > 0 ? yearsWithData[0] : 2025;
       setDisplayYear(mostRecentYear);
       
-      // Get data for the most recent year
+      // Get data for the most recent year - improved filtering
       const currentYearIncidents = allIncidents.data.filter(incident => {
-        const date = new Date(incident.dispatchDate);
-        return date.getFullYear() === mostRecentYear;
+        // Try dispatchDateTime first (more reliable), then fallback to dispatchDate
+        let date = null;
+        if (incident.dispatchDateTime) {
+          date = new Date(incident.dispatchDateTime);
+        } else if (incident.dispatchDate) {
+          date = new Date(incident.dispatchDate);
+        }
+        
+        // Only include valid dates that match the target year
+        if (date && !isNaN(date.getTime())) {
+          return date.getFullYear() === mostRecentYear;
+        }
+        return false;
       });
       
       setCurrentYearData(currentYearIncidents);

@@ -13,6 +13,9 @@ export const incidentAPI = {
   // Get all incidents
   getAllIncidents: () => api.get('/incidents'),
   
+  // Get individual incident by ID
+  getIncidentById: (id) => api.get(`/incidents/${id}`),
+  
   // Get incident statistics (both method names for compatibility)
   getStats: () => api.get('/incidents/stats'),
   getStatistics: () => api.get('/incidents/stats'),
