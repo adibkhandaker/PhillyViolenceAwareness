@@ -15,6 +15,7 @@ import {
 import { motion } from 'framer-motion';
 import AwarenessLanding from './components/AwarenessLanding';
 import Dashboard from './components/Dashboard';
+import HeatMap from './components/HeatMap';
 
 // Import fonts
 import '@fontsource/playfair-display/400.css';
@@ -259,6 +260,19 @@ function App() {
                 >
                   Dashboard
                 </Button>
+                <Button
+                  variant={currentView === 'heatmap' ? 'contained' : 'text'}
+                  onClick={() => handleViewChange('heatmap')}
+                  sx={{ 
+                    color: currentView === 'heatmap' ? '#000000' : 'text.primary',
+                    backgroundColor: currentView === 'heatmap' ? '#ffffff' : 'transparent',
+                    '&:hover': {
+                      backgroundColor: currentView === 'heatmap' ? '#f0f0f0' : 'rgba(255, 255, 255, 0.1)',
+                    }
+                  }}
+                >
+                  Heat Map
+                </Button>
               </Box>
             </motion.div>
           </Toolbar>
@@ -278,6 +292,14 @@ function App() {
             <Fade in={currentView === 'dashboard'} timeout={500}>
               <div>
                 <Dashboard />
+              </div>
+            </Fade>
+          )}
+          
+          {currentView === 'heatmap' && (
+            <Fade in={currentView === 'heatmap'} timeout={500}>
+              <div>
+                <HeatMap />
               </div>
             </Fade>
           )}
