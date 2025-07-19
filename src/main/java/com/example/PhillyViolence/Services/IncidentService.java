@@ -188,6 +188,7 @@ public class IncidentService implements ApplicationRunner {
                     
                     // Skip if we already have this incident
                     if (objectId != null && incidentRepository.existsByObjectId(objectId)) {
+                        System.out.println("Skipping duplicate incident with objectId: " + objectId);
                         continue;
                     }
                     
@@ -220,8 +221,16 @@ public class IncidentService implements ApplicationRunner {
                     incident.setLatitude(parseDouble(values[13]));
                     incident.setLongitude(parseDouble(values[14]));
                     
-                    incidentRepository.save(incident);
-                    processedCount++;
+                    try {
+                        incidentRepository.save(incident);
+                        processedCount++;
+                    } catch (Exception saveException) {
+                        if (saveException.getMessage().contains("Duplicate entry")) {
+                            System.out.println("Duplicate incident detected during save, skipping: " + objectId);
+                        } else {
+                            System.err.println("Error saving incident: " + saveException.getMessage());
+                        }
+                    }
                 }
             } catch (Exception e) {
                 System.err.println("Error parsing CSV line: " + line);
