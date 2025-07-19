@@ -16,6 +16,7 @@ public class PhillyViolenceApplication {
 		System.out.println("MYSQLDATABASE: " + System.getenv("MYSQLDATABASE"));
 		System.out.println("MYSQLUSER: " + System.getenv("MYSQLUSER"));
 		System.out.println("MYSQLPASSWORD: " + (System.getenv("MYSQLPASSWORD") != null ? "***SET***" : "NULL"));
+		System.out.println("MYSQL_URL: " + System.getenv("MYSQL_URL"));
 		System.out.println("==================================");
 		
 		SpringApplication.run(PhillyViolenceApplication.class, args);
