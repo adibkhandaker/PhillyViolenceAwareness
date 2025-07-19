@@ -1,6 +1,7 @@
 package com.example.PhillyViolence.Controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.graphql.GraphQlProperties.Http;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -23,6 +24,13 @@ public class IncidentController {
     @Autowired
     private IncidentService incidentService;
 
+    @GetMapping("/{incidentID}")
+    public ResponseEntity<Incident> getIncident(@PathVariable long incidentID) {
+        Incident incident = incidentService.getIncident(incidentID);
+        return new ResponseEntity<>(incident, HttpStatus.OK);
+    }
+    
+
     @GetMapping
     public ResponseEntity<List<Incident>> getAllIncidents() {
         List<Incident> incidents = incidentService.getAllIncidents();
@@ -33,6 +41,12 @@ public class IncidentController {
     public ResponseEntity<List<Incident>> getIncidentsByCrimeType(@PathVariable String ucrGeneral) {
         List<Incident> incidents = incidentService.getIncidentsByCrimeType(Integer.parseInt(ucrGeneral));
         return ResponseEntity.ok(incidents);
+    }
+
+    @GetMapping("/{year}/{ucrGeneral}") 
+    public ResponseEntity<List<Incident>> getIncidentsYearCrimeType(@PathVariable int year, @PathVariable int ucrGeneral) {
+        List<Incident> incidents = incidentService.getIncidentsYearCrimeType(year, ucrGeneral);
+        return new ResponseEntity<>(incidents, HttpStatus.OK);
     }
 
     @GetMapping("/address/{address}")

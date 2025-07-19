@@ -24,6 +24,11 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
     @Transactional
     @Query("DELETE FROM Incident i WHERE YEAR(i.dispatchDateTime) = :year")
     int deleteByDispatchDateTimeYear(@Param("year") int year);
+
+    @Query("Select i FROM Incident i WHERE " + 
+    "YEAR(i.dispatchDateTime) = :year AND " +
+    "i.ucrGeneral = :ucrGeneral")
+    List<Incident> getIncidentsYearCrimeType(int year, int ucrGeneral);
 }
 
 

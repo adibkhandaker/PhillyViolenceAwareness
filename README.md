@@ -1,10 +1,11 @@
-# Philadelphia Crime Analytics
+# Philadelphia Violence Project
 
-A modern, full-stack web application for analyzing Philadelphia violent crime data with real-time statistics, year-based filtering, and clean data visualization.
+A modern, full-stack web application for analyzing Philadelphia violent crime data with real-time statistics, year-based filtering, and clean data visualization. The project includes user authentication and comprehensive data analysis tools.
 
 ## Features
 
 ### Backend (Spring Boot)
+- **User Authentication**: Secure registration and login system
 - **Real-time Data Integration**: Automatically fetches violent crime data from Philadelphia's official API
 - **Historical Data Analysis**: Complete dataset from 2006-2025 with year-based filtering
 - **Crime Type Analysis**: Breakdown by UCR codes (Homicide, Rape, Robbery, Aggravated Assault)
@@ -13,12 +14,14 @@ A modern, full-stack web application for analyzing Philadelphia violent crime da
 - **Robust Error Handling**: Fallback to sample data if APIs are unavailable
 
 ### Frontend (React + Material-UI)
+- **User Authentication**: Login and registration screens with modern UI
 - **Modern UI**: Clean, responsive design with Material-UI components
-- **Multi-tab Interface**: Organized navigation between Dashboard, Yearly Analysis, and Crime Map
+- **Multi-tab Interface**: Organized navigation between Home, Dashboard, and Visualize
 - **Interactive Year Sorting**: Dropdown to filter incidents by year
 - **Real-time Statistics**: Live crime statistics with color-coded cards
 - **Advanced Search**: Filter incidents by crime type, location, or district
 - **Data Table**: Paginated table with sorting and filtering capabilities
+- **Interactive Heatmap**: Geographic visualization of crime incidents
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
 
 ## Architecture
@@ -57,6 +60,10 @@ PhillyViolence/
 - **Vite** - Fast build tool and dev server
 
 ## API Endpoints
+
+### Authentication
+- `POST /main/register` - Register new user
+- `POST /main/login` - User login (placeholder for future implementation)
 
 ### Incident Management
 - `GET /api/incidents` - Get all incidents
@@ -194,4 +201,4 @@ For support and questions:
 
 ---
 
-**Built with care to bring awareness to Philadelphia violence and support data-driven community safety initiatives.** 
+**Built with care to bring awareness to Philadelphia violence and support data-driven community safety initiatives through the Philadelphia Violence Project.** 

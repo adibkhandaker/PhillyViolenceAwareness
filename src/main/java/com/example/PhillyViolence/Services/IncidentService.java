@@ -379,4 +379,12 @@ public class IncidentService implements ApplicationRunner {
     public List<Incident> getIncidentsbyAddress(String address) {
         return incidentRepository.getIncidentsbyAddress(address);
     }
+
+    public Incident getIncident(long incidentID) {
+        return incidentRepository.findById(incidentID).orElse(null);
+    }
+
+    public List<Incident> getIncidentsYearCrimeType(int year, int ucrGeneral) {
+        return incidentRepository.getIncidentsYearCrimeType(year, ucrGeneral);
+    }
 }

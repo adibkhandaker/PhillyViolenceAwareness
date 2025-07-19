@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = 'http://localhost:8080';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -9,31 +9,66 @@ const api = axios.create({
   },
 });
 
+// Add request interceptor for debugging
+api.interceptors.request.use(
+  (config) => {
+    console.log('API Request:', config.method?.toUpperCase(), config.url, config.data);
+    return config;
+  },
+  (error) => {
+    console.error('API Request Error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for debugging
+api.interceptors.response.use(
+  (response) => {
+    console.log('API Response:', response.status, response.data);
+    return response;
+  },
+  (error) => {
+    console.error('API Response Error:', error.response?.status, error.response?.data, error.message);
+    return Promise.reject(error);
+  }
+);
+
 export const incidentAPI = {
   // Get all incidents
-  getAllIncidents: () => api.get('/incidents'),
+  getAllIncidents: () => api.get('/api/incidents'),
   
   // Get individual incident by ID
-  getIncidentById: (id) => api.get(`/incidents/${id}`),
+  getIncidentById: (id) => api.get(`/api/incidents/${id}`),
   
   // Get incident statistics (both method names for compatibility)
-  getStats: () => api.get('/incidents/stats'),
-  getStatistics: () => api.get('/incidents/stats'),
+  getStats: () => api.get('/api/incidents/stats'),
+  getStatistics: () => api.get('/api/incidents/stats'),
   
   // Get incidents by crime type
-  getIncidentsByCrimeType: (ucrGeneral) => api.get(`/incidents/crime-type/${ucrGeneral}`),
+  getIncidentsByCrimeType: (ucrGeneral) => api.get(`/api/incidents/crime-type/${ucrGeneral}`),
   
   // Get incidents by address
-  getIncidentsByAddress: (address) => api.get(`/incidents/address/${encodeURIComponent(address)}`),
+  getIncidentsByAddress: (address) => api.get(`/api/incidents/address/${encodeURIComponent(address)}`),
   
   // Get incidents by year
-  getIncidentsByYear: (year) => api.get(`/incidents/by-year/${year}`),
+  getIncidentsByYear: (year) => api.get(`/api/incidents/by-year/${year}`),
   
   // Get incidents sorted by year
-  getIncidentsSortedByYear: () => api.get('/incidents/sorted-by-year'),
+  getIncidentsSortedByYear: () => api.get('/api/incidents/sorted-by-year'),
   
   // Refresh incident data
-  refreshData: () => api.post('/incidents/refresh'),
+  refreshData: () => api.post('/api/incidents/refresh'),
+};
+
+export const authAPI = {
+  // Register new user
+  register: (userData) => {
+    console.log('API: Registering user with data:', { ...userData, password: '***' });
+    return api.post('/main/register', userData);
+  },
+  
+  // Login user (placeholder for when login endpoint is implemented)
+  login: (credentials) => api.post('/main/login', credentials),
 };
 
 export default api; 

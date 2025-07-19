@@ -15,7 +15,9 @@ import {
 import { motion } from 'framer-motion';
 import AwarenessLanding from './components/AwarenessLanding';
 import Dashboard from './components/Dashboard';
-import HeatMap from './components/HeatMap';
+import Visualize from './components/Visualize';
+import Login from './components/Login';
+import Register from './components/Register';
 
 // Import fonts
 import '@fontsource/playfair-display/400.css';
@@ -191,10 +193,35 @@ const theme = createTheme({
 });
 
 function App() {
-  const [currentView, setCurrentView] = useState('landing'); // 'landing' or 'dashboard'
+  const [currentView, setCurrentView] = useState('landing');
+  const [authView, setAuthView] = useState('login'); // 'login' or 'register'
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const handleViewChange = (view) => {
     setCurrentView(view);
+  };
+
+  const handleAuthViewChange = (view) => {
+    setAuthView(view);
+  };
+
+  const handleLoginSuccess = (username) => {
+    setIsAuthenticated(true);
+    setCurrentUser(username);
+    setCurrentView('landing');
+  };
+
+  const handleRegisterSuccess = (username) => {
+    setIsAuthenticated(true);
+    setCurrentUser(username);
+    setCurrentView('landing');
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+    setCurrentView('landing');
   };
 
   return (
@@ -224,7 +251,7 @@ function App() {
                   textTransform: 'uppercase',
                 }}
               >
-                Philadelphia Violence Awareness
+                Philadelphia Violence Project
               </Typography>
             </motion.div>
             
@@ -233,46 +260,101 @@ function App() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <Button
-                  variant={currentView === 'landing' ? 'contained' : 'text'}
-                  onClick={() => handleViewChange('landing')}
-                  sx={{ 
-                    color: currentView === 'landing' ? '#000000' : 'text.primary',
-                    backgroundColor: currentView === 'landing' ? '#ffffff' : 'transparent',
-                    '&:hover': {
-                      backgroundColor: currentView === 'landing' ? '#f0f0f0' : 'rgba(255, 255, 255, 0.1)',
-                    }
-                  }}
-                >
-                  Home
-                </Button>
-                <Button
-                  variant={currentView === 'dashboard' ? 'contained' : 'text'}
-                  onClick={() => handleViewChange('dashboard')}
-                  sx={{ 
-                    color: currentView === 'dashboard' ? '#000000' : 'text.primary',
-                    backgroundColor: currentView === 'dashboard' ? '#ffffff' : 'transparent',
-                    '&:hover': {
-                      backgroundColor: currentView === 'dashboard' ? '#f0f0f0' : 'rgba(255, 255, 255, 0.1)',
-                    }
-                  }}
-                >
-                  Dashboard
-                </Button>
-                <Button
-                  variant={currentView === 'heatmap' ? 'contained' : 'text'}
-                  onClick={() => handleViewChange('heatmap')}
-                  sx={{ 
-                    color: currentView === 'heatmap' ? '#000000' : 'text.primary',
-                    backgroundColor: currentView === 'heatmap' ? '#ffffff' : 'transparent',
-                    '&:hover': {
-                      backgroundColor: currentView === 'heatmap' ? '#f0f0f0' : 'rgba(255, 255, 255, 0.1)',
-                    }
-                  }}
-                >
-                  Heat Map
-                </Button>
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                {isAuthenticated ? (
+                  <>
+                    <Button
+                      variant={currentView === 'landing' ? 'contained' : 'text'}
+                      onClick={() => handleViewChange('landing')}
+                      sx={{ 
+                        color: currentView === 'landing' ? '#000000' : 'text.primary',
+                        backgroundColor: currentView === 'landing' ? '#ffffff' : 'transparent',
+                        '&:hover': {
+                          backgroundColor: currentView === 'landing' ? '#f0f0f0' : 'rgba(255, 255, 255, 0.1)',
+                        }
+                      }}
+                    >
+                      Home
+                    </Button>
+                    <Button
+                      variant={currentView === 'dashboard' ? 'contained' : 'text'}
+                      onClick={() => handleViewChange('dashboard')}
+                      sx={{ 
+                        color: currentView === 'dashboard' ? '#000000' : 'text.primary',
+                        backgroundColor: currentView === 'dashboard' ? '#ffffff' : 'transparent',
+                        '&:hover': {
+                          backgroundColor: currentView === 'dashboard' ? '#f0f0f0' : 'rgba(255, 255, 255, 0.1)',
+                        }
+                      }}
+                    >
+                      Dashboard
+                    </Button>
+                    <Button
+                      variant={currentView === 'visualize' ? 'contained' : 'text'}
+                      onClick={() => handleViewChange('visualize')}
+                      sx={{ 
+                        color: currentView === 'visualize' ? '#000000' : 'text.primary',
+                        backgroundColor: currentView === 'visualize' ? '#ffffff' : 'transparent',
+                        '&:hover': {
+                          backgroundColor: currentView === 'visualize' ? '#f0f0f0' : 'rgba(255, 255, 255, 0.1)',
+                        }
+                      }}
+                    >
+                      Visualize
+                    </Button>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'text.secondary',
+                        fontFamily: '"Crimson Text", "Georgia", "Times New Roman", serif',
+                        mx: 2
+                      }}
+                    >
+                      Welcome, {currentUser}
+                    </Typography>
+                    <Button
+                      variant="text"
+                      onClick={handleLogout}
+                      sx={{ 
+                        color: 'text.secondary',
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        }
+                      }}
+                    >
+                      Logout
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant={authView === 'login' ? 'contained' : 'text'}
+                      onClick={() => handleAuthViewChange('login')}
+                      sx={{ 
+                        color: authView === 'login' ? '#000000' : 'text.primary',
+                        backgroundColor: authView === 'login' ? '#ffffff' : 'transparent',
+                        '&:hover': {
+                          backgroundColor: authView === 'login' ? '#f0f0f0' : 'rgba(255, 255, 255, 0.1)',
+                        }
+                      }}
+                    >
+                      Sign In
+                    </Button>
+                    <Button
+                      variant={authView === 'register' ? 'contained' : 'text'}
+                      onClick={() => handleAuthViewChange('register')}
+                      sx={{ 
+                        color: authView === 'register' ? '#000000' : 'text.primary',
+                        backgroundColor: authView === 'register' ? '#ffffff' : 'transparent',
+                        '&:hover': {
+                          backgroundColor: authView === 'register' ? '#f0f0f0' : 'rgba(255, 255, 255, 0.1)',
+                        }
+                      }}
+                    >
+                      Sign Up
+                    </Button>
+                  </>
+                )}
               </Box>
             </motion.div>
           </Toolbar>
@@ -280,28 +362,58 @@ function App() {
 
         {/* Main Content */}
         <Box sx={{ pt: 8 }}>
-          {currentView === 'landing' && (
-            <Fade in={currentView === 'landing'} timeout={500}>
-              <div>
-                <AwarenessLanding onNavigateToDashboard={() => handleViewChange('dashboard')} />
-              </div>
-            </Fade>
-          )}
-          
-          {currentView === 'dashboard' && (
-            <Fade in={currentView === 'dashboard'} timeout={500}>
-              <div>
-                <Dashboard />
-              </div>
-            </Fade>
-          )}
-          
-          {currentView === 'heatmap' && (
-            <Fade in={currentView === 'heatmap'} timeout={500}>
-              <div>
-                <HeatMap />
-              </div>
-            </Fade>
+          {!isAuthenticated ? (
+            // Authentication Views
+            <>
+              {authView === 'login' && (
+                <Fade in={authView === 'login'} timeout={500}>
+                  <div>
+                    <Login 
+                      onSwitchToRegister={() => handleAuthViewChange('register')}
+                      onLoginSuccess={handleLoginSuccess}
+                    />
+                  </div>
+                </Fade>
+              )}
+              
+              {authView === 'register' && (
+                <Fade in={authView === 'register'} timeout={500}>
+                  <div>
+                    <Register 
+                      onSwitchToLogin={() => handleAuthViewChange('login')}
+                      onRegisterSuccess={handleRegisterSuccess}
+                    />
+                  </div>
+                </Fade>
+              )}
+            </>
+          ) : (
+            // Authenticated Views
+            <>
+              {currentView === 'landing' && (
+                <Fade in={currentView === 'landing'} timeout={500}>
+                  <div>
+                    <AwarenessLanding onNavigateToDashboard={() => handleViewChange('dashboard')} />
+                  </div>
+                </Fade>
+              )}
+              
+              {currentView === 'dashboard' && (
+                <Fade in={currentView === 'dashboard'} timeout={500}>
+                  <div>
+                    <Dashboard />
+                  </div>
+                </Fade>
+              )}
+              
+              {currentView === 'visualize' && (
+                <Fade in={currentView === 'visualize'} timeout={500}>
+                  <div>
+                    <Visualize />
+                  </div>
+                </Fade>
+              )}
+            </>
           )}
         </Box>
       </Box>
