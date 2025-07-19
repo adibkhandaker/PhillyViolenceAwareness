@@ -30,10 +30,7 @@ public class SecurityConfig {
             .csrf(customizer -> customizer.disable())
             .cors(customizer -> customizer.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(request -> request
-            .requestMatchers("/main/register").permitAll()
-            .requestMatchers("/api/**").permitAll() // Allow public access to API endpoints
-            .requestMatchers("/h2-console/**").permitAll() // Allow H2 console access
-            .anyRequest().authenticated())
+            .anyRequest().permitAll()) // Allow all requests without authentication
             .httpBasic(Customizer.withDefaults())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .headers(headers -> headers.frameOptions().disable()) // For H2 console
