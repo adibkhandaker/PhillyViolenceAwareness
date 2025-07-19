@@ -42,7 +42,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.addAllowedOrigin("http://localhost:5173"); // Frontend dev server
         configuration.addAllowedOrigin("http://localhost:3000"); // Alternative frontend port
-        configuration.addAllowedOrigin("https://philly-violence-awareness.vercel.app"); // Deployed Vercel frontend
+
         configuration.addAllowedMethod("*");
         configuration.addAllowedHeader("*");
         configuration.setAllowCredentials(true);
